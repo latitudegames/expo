@@ -1,6 +1,6 @@
 {
-  "name": "expo-updates",
-  "version": "0.27.4",
+  "name": "latitudegames/expo-updates",
+  "version": "0.0.1",
   "description": "Fetches and manages remotely-hosted assets and updates to your app's JS bundle.",
   "main": "build/index.js",
   "types": "build/index.d.ts",
@@ -24,7 +24,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/expo/expo.git",
+    "url": "https://github.com/latitudegames/expo.git",
     "directory": "packages/expo-updates"
   },
   "bugs": {
