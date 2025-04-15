@@ -150,23 +150,16 @@ class EnabledUpdatesController(
     stateMachine.queueExecution(startupProcedure)
   }
 
-  private fun relaunchReactApplication(shouldRunReaper: Boolean, callback: LauncherCallback) {
-    val configuration = resolveConfiguration()
-    val procedure = RelaunchProcedure(
-      context,
-      weakActivity,
-      configuration,
-      logger,
-      databaseHolder,
-      updatesDirectory,
-      fileDownloader,
-      selectionPolicy,
-      getCurrentLauncher = { startupProcedure.launcher!! },
-      setCurrentLauncher = { currentLauncher -> startupProcedure.setLauncher(currentLauncher) },
-      shouldRunReaper = shouldRunReaper,
-      callback
-    )
-    stateMachine.queueExecution(procedure)
+  private fun resolveFileDownloader(): FileDownloader {
+    if (!hasConfigOverride) {
+      return fileDownloader
+    }
+    val result = UpdatesConfiguration.getUpdatesConfigurationValidationResult(context, null)
+    val newConfig = when (result) {
+      UpdatesConfigurationValidationResult.VALID -> UpdatesConfiguration(context, null)
+      else -> return fileDownloader
+    }
+    return FileDownloader(context, newConfig, logger)
   }
 
   private fun resolveConfiguration(): UpdatesConfiguration {
@@ -180,6 +173,26 @@ class EnabledUpdatesController(
       else -> return updatesConfiguration
     }
     return newConfig
+  }
+
+  private fun relaunchReactApplication(shouldRunReaper: Boolean, callback: LauncherCallback) {
+    val configuration = resolveConfiguration()
+    val downloader = resolveFileDownloader()
+    val procedure = RelaunchProcedure(
+      context,
+      weakActivity,
+      configuration,
+      logger,
+      databaseHolder,
+      updatesDirectory,
+      downloader,
+      selectionPolicy,
+      getCurrentLauncher = { startupProcedure.launcher!! },
+      setCurrentLauncher = { currentLauncher -> startupProcedure.setLauncher(currentLauncher) },
+      shouldRunReaper = shouldRunReaper,
+      callback
+    )
+    stateMachine.queueExecution(procedure)
   }
 
   override fun getConstantsForModule(): IUpdatesController.UpdatesModuleConstants {
@@ -222,7 +235,8 @@ class EnabledUpdatesController(
 
   override fun checkForUpdate(callback: IUpdatesController.ModuleCallback<IUpdatesController.CheckForUpdateResult>) {
     val configuration = resolveConfiguration()
-    val procedure = CheckForUpdateProcedure(context, configuration, databaseHolder, logger, fileDownloader, selectionPolicy, launchedUpdate) {
+    val downloader = resolveFileDownloader()
+    val procedure = CheckForUpdateProcedure(context, configuration, databaseHolder, logger, downloader, selectionPolicy, launchedUpdate) {
       callback.onSuccess(it)
     }
     stateMachine.queueExecution(procedure)
@@ -230,7 +244,8 @@ class EnabledUpdatesController(
 
   override fun fetchUpdate(callback: IUpdatesController.ModuleCallback<IUpdatesController.FetchUpdateResult>) {
     val configuration = resolveConfiguration()
-    val procedure = FetchUpdateProcedure(context, configuration, logger, databaseHolder, updatesDirectory, fileDownloader, selectionPolicy, launchedUpdate) {
+    val downloader = resolveFileDownloader()
+    val procedure = FetchUpdateProcedure(context, configuration, logger, databaseHolder, updatesDirectory, downloader, selectionPolicy, launchedUpdate) {
       callback.onSuccess(it)
     }
     stateMachine.queueExecution(procedure)
