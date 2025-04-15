@@ -64,6 +64,7 @@ class EnabledUpdatesController(
   private var isStartupFinished = false
   private var startupStartTimeMillis: Long? = null
   private var startupEndTimeMillis: Long? = null
+  private var hasConfigOverride: Boolean = false
 
   @Synchronized
   private fun onStartupProcedureFinished() {
@@ -150,10 +151,11 @@ class EnabledUpdatesController(
   }
 
   private fun relaunchReactApplication(shouldRunReaper: Boolean, callback: LauncherCallback) {
+    val configuration = resolveConfiguration()
     val procedure = RelaunchProcedure(
       context,
       weakActivity,
-      updatesConfiguration,
+      configuration,
       logger,
       databaseHolder,
       updatesDirectory,
@@ -167,17 +169,31 @@ class EnabledUpdatesController(
     stateMachine.queueExecution(procedure)
   }
 
+  private fun resolveConfiguration(): UpdatesConfiguration {
+    if (!hasConfigOverride) {
+      return updatesConfiguration
+    }
+
+    val result = UpdatesConfiguration.getUpdatesConfigurationValidationResult(context, null)
+    val newConfig = when (result) {
+      UpdatesConfigurationValidationResult.VALID -> UpdatesConfiguration(context, null)
+      else -> return updatesConfiguration
+    }
+    return newConfig
+  }
+
   override fun getConstantsForModule(): IUpdatesController.UpdatesModuleConstants {
+    val configuration = resolveConfiguration()
     return IUpdatesController.UpdatesModuleConstants(
       launchedUpdate = launchedUpdate,
       launchDuration = launchDuration,
-      embeddedUpdate = EmbeddedManifestUtils.getEmbeddedUpdate(context, updatesConfiguration)?.updateEntity,
+      embeddedUpdate = EmbeddedManifestUtils.getEmbeddedUpdate(context, configuration)?.updateEntity,
       emergencyLaunchException = startupProcedure.emergencyLaunchException,
       isEnabled = true,
       isUsingEmbeddedAssets = isUsingEmbeddedAssets,
-      runtimeVersion = updatesConfiguration.runtimeVersionRaw,
-      checkOnLaunch = updatesConfiguration.checkOnLaunch,
-      requestHeaders = updatesConfiguration.requestHeaders,
+      runtimeVersion = configuration.runtimeVersionRaw,
+      checkOnLaunch = configuration.checkOnLaunch,
+      requestHeaders = configuration.requestHeaders,
       localAssetFiles = localAssetFiles,
       shouldDeferToNativeForAPIMethodAvailabilityInDevelopment = false,
       initialContext = stateMachine.context
@@ -205,14 +221,16 @@ class EnabledUpdatesController(
   }
 
   override fun checkForUpdate(callback: IUpdatesController.ModuleCallback<IUpdatesController.CheckForUpdateResult>) {
-    val procedure = CheckForUpdateProcedure(context, updatesConfiguration, databaseHolder, logger, fileDownloader, selectionPolicy, launchedUpdate) {
+    val configuration = resolveConfiguration()
+    val procedure = CheckForUpdateProcedure(context, configuration, databaseHolder, logger, fileDownloader, selectionPolicy, launchedUpdate) {
       callback.onSuccess(it)
     }
     stateMachine.queueExecution(procedure)
   }
 
   override fun fetchUpdate(callback: IUpdatesController.ModuleCallback<IUpdatesController.FetchUpdateResult>) {
-    val procedure = FetchUpdateProcedure(context, updatesConfiguration, logger, databaseHolder, updatesDirectory, fileDownloader, selectionPolicy, launchedUpdate) {
+    val configuration = resolveConfiguration()
+    val procedure = FetchUpdateProcedure(context, configuration, logger, databaseHolder, updatesDirectory, fileDownloader, selectionPolicy, launchedUpdate) {
       callback.onSuccess(it)
     }
     stateMachine.queueExecution(procedure)
@@ -245,11 +263,12 @@ class EnabledUpdatesController(
   }
 
   override fun setExtraParam(key: String, value: String?, callback: IUpdatesController.ModuleCallback<Unit>) {
+    val configuration = resolveConfiguration()
     AsyncTask.execute {
       try {
         ManifestMetadata.setExtraParam(
           databaseHolder.database,
-          updatesConfiguration,
+          configuration,
           key,
           value
         )
@@ -267,6 +286,7 @@ class EnabledUpdatesController(
       throw CodedException("ERR_UPDATES_RUNTIME_OVERRIDE", "Must set disableAntiBrickingMeasures configuration to use updates overriding", null)
     }
     UpdatesConfigurationOverride.save(context, configOverride)
+    hasConfigOverride = true
   }
 
   companion object {

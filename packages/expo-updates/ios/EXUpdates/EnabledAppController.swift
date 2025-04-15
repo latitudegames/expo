@@ -21,6 +21,7 @@ public class EnabledAppController: InternalAppControllerInterface, StartupProced
   private var isStarted = false
   private var startupStartTime: DispatchTime?
   private var startupEndTime: DispatchTime?
+  private var hasConfigOverride = false
 
   private var launchDuration: Double? {
     return startupStartTime.let({ start in
@@ -71,7 +72,7 @@ public class EnabledAppController: InternalAppControllerInterface, StartupProced
 
     startupProcedure = StartupProcedure(
       database: self.database,
-      config: self.config,
+      config: self.resolveConfiguration(),
       selectionPolicy: self.selectionPolicy,
       controllerQueue: self.controllerQueue,
       updatesDirectory: self.updatesDirectoryInternal,
@@ -98,11 +99,22 @@ public class EnabledAppController: InternalAppControllerInterface, StartupProced
       }
     }
   }
+    
+  func resolveConfiguration() -> UpdatesConfig {
+    if self.hasConfigOverride {
+      guard let config = try? UpdatesConfig.configWithExpoPlist(mergingOtherDictionary: nil) else {
+        return self.config
+      }
+      return config
+    }
+    return self.config
+    
+  }
 
   func startupProcedure(_ startupProcedure: StartupProcedure, errorRecoveryDidRequestRelaunchWithCompletion completion: @escaping (Error?, Bool) -> Void) {
     let procedure = RelaunchProcedure(
       database: self.database,
-      config: self.config,
+      config: self.resolveConfiguration(),
       selectionPolicy: self.selectionPolicy,
       controllerQueue: self.controllerQueue,
       updatesDirectory: self.updatesDirectoryInternal,
@@ -130,7 +142,7 @@ public class EnabledAppController: InternalAppControllerInterface, StartupProced
   ) {
     let procedure = RelaunchProcedure(
       database: self.database,
-      config: self.config,
+      config: self.resolveConfiguration(),
       selectionPolicy: self.selectionPolicy,
       controllerQueue: self.controllerQueue,
       updatesDirectory: self.updatesDirectoryInternal,
@@ -161,6 +173,7 @@ public class EnabledAppController: InternalAppControllerInterface, StartupProced
   // MARK: - JS API
 
   public func getConstantsForModule() -> UpdatesModuleConstants {
+    let configuration = self.resolveConfiguration()
     return UpdatesModuleConstants(
       launchedUpdate: startupProcedure.launchedUpdate(),
       launchDuration: launchDuration,
@@ -168,9 +181,9 @@ public class EnabledAppController: InternalAppControllerInterface, StartupProced
       emergencyLaunchException: startupProcedure.emergencyLaunchException,
       isEnabled: true,
       isUsingEmbeddedAssets: startupProcedure.isUsingEmbeddedAssets(),
-      runtimeVersion: self.config.runtimeVersion,
-      checkOnLaunch: self.config.checkOnLaunch,
-      requestHeaders: self.config.requestHeaders,
+      runtimeVersion: configuration.runtimeVersion,
+      checkOnLaunch: configuration.checkOnLaunch,
+      requestHeaders: configuration.requestHeaders,
       assetFilesMap: startupProcedure.assetFilesMap(),
       shouldDeferToNativeForAPIMethodAvailabilityInDevelopment: false,
       initialContext: stateMachine.context
@@ -183,7 +196,7 @@ public class EnabledAppController: InternalAppControllerInterface, StartupProced
   ) {
     let procedure = CheckForUpdateProcedure(
       database: self.database,
-      config: self.config,
+      config: self.resolveConfiguration(),
       selectionPolicy: self.selectionPolicy,
       logger: self.logger
     ) {
@@ -202,7 +215,7 @@ public class EnabledAppController: InternalAppControllerInterface, StartupProced
   ) {
     let procedure = FetchUpdateProcedure(
       database: self.database,
-      config: self.config,
+      config: self.resolveConfiguration(),
       selectionPolicy: self.selectionPolicy,
       controllerQueue: self.controllerQueue,
       updatesDirectory: self.updatesDirectoryInternal,
@@ -223,7 +236,7 @@ public class EnabledAppController: InternalAppControllerInterface, StartupProced
   ) {
     self.database.databaseQueue.async {
       do {
-        successBlockArg(try self.database.extraParams(withScopeKey: self.config.scopeKey))
+        successBlockArg(try self.database.extraParams(withScopeKey: self.resolveConfiguration().scopeKey))
       } catch {
         errorBlockArg(UnexpectedException(error))
       }
@@ -238,7 +251,7 @@ public class EnabledAppController: InternalAppControllerInterface, StartupProced
   ) {
     self.database.databaseQueue.async {
       do {
-        try self.database.setExtraParam(key: key, value: value, withScopeKey: self.config.scopeKey)
+        try self.database.setExtraParam(key: key, value: value, withScopeKey: self.resolveConfiguration().scopeKey)
         successBlockArg()
       } catch {
         errorBlockArg(UnexpectedException(error))
@@ -247,7 +260,7 @@ public class EnabledAppController: InternalAppControllerInterface, StartupProced
   }
 
   public func getEmbeddedUpdate() -> Update? {
-    return EmbeddedAppLoader.embeddedManifest(withConfig: self.config, database: self.database)
+    return EmbeddedAppLoader.embeddedManifest(withConfig: self.resolveConfiguration(), database: self.database)
   }
 
   public func setUpdateURLAndRequestHeadersOverride(_ configOverride: UpdatesConfigOverride?) throws {
@@ -255,6 +268,7 @@ public class EnabledAppController: InternalAppControllerInterface, StartupProced
       throw NotAllowedAntiBrickingMeasuresException()
     }
     UpdatesConfigOverride.save(configOverride)
+    self.hasConfigOverride = true
   }
 }
 
