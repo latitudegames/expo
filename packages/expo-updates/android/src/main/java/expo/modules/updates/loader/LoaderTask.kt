@@ -199,14 +199,14 @@ class LoaderTask(
           // embedded update and we have no update downloaded (e.g. Expo client).
           // What to do in this case depends on whether or not we're trying to load a remote update.
           // If we are, then we should wait for the task to finish. If not, we need to fail here.
-          if (!shouldCheckForUpdate) {
+          if (!shouldCheckForUpdate && configuration.hasEmbeddedUpdate) {
+            logger.error("Failed to launch embedded or launchable update", e, UpdatesErrorCode.UpdateFailedToLoad)
             finish(e)
             isRunning = false
             callback.onFinishedAllLoading()
           } else {
             launchRemoteUpdate()
           }
-          logger.error("Failed to launch embedded or launchable update", e, UpdatesErrorCode.UpdateFailedToLoad)
         }
 
         override fun onSuccess() {
@@ -352,7 +352,7 @@ class LoaderTask(
           launcher.launch(database, launcherCallback)
         }
       } else {
-        launcher.launch(database, launcherCallback)
+        launcherCallback.onFailure(Exception("No embedded update found"))
       }
     }
   }
