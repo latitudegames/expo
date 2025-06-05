@@ -641,13 +641,7 @@ class FileDownloader(
         .apply {
           val previousFatalError = NoDatabaseLauncher.consumeErrorLog(context, logger)
           if (previousFatalError != null) {
-            // some servers can have max length restrictions for headers,
-            // so we restrict the length of the string to 1024 characters --
-            // this should satisfy the requirements of most servers
-            header(
-              "Expo-Fatal-Error",
-              previousFatalError.substring(0, min(1024, previousFatalError.length))
-            )
+            header("Expo-Fatal-Error", "true")
           }
         }
         .apply {

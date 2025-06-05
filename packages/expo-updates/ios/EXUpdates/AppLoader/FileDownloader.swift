@@ -296,12 +296,7 @@ public final class FileDownloader {
     request.setValue(config.runtimeVersion, forHTTPHeaderField: "Expo-Runtime-Version")
 
     if let previousFatalError = ErrorRecovery.consumeErrorLog(logger: logger) {
-      let sanitized = previousFatalError
-        .replacingOccurrences(of: "\n", with: " ␤ ")
-        .truncate(toMaxLength: 1024)
-
-      logger.info(message: "[FileDownloader] Sanitized Fatal Error Header: \(sanitized)")
-      request.setValue(sanitized, forHTTPHeaderField: "Expo-Fatal-Error")
+      request.setValue("true", forHTTPHeaderField: "Expo-Fatal-Error")
     }
 
     for (key, value) in config.requestHeaders {

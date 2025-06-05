@@ -64,7 +64,7 @@ class StartupProcedure(
 
   var emergencyLaunchException: Exception? = null
     private set
-  private val errorRecovery = ErrorRecovery(logger)
+  private val errorRecovery = ErrorRecovery(context, logger)
   private var remoteLoadStatus = ErrorRecoveryDelegate.RemoteLoadStatus.IDLE
 
   // TODO: move away from DatabaseHolder pattern to Handler thread

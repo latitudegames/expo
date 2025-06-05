@@ -1,6 +1,8 @@
 package expo.modules.updates.errorrecovery
 
 import android.os.Handler
+import android.content.Context
+import java.io.File
 import android.os.HandlerThread
 import com.facebook.react.bridge.DefaultJSExceptionHandler
 import com.facebook.react.bridge.ReactMarker
@@ -27,6 +29,7 @@ import java.lang.ref.WeakReference
  * and so there is no more need to trigger the error recovery pipeline.
  */
 class ErrorRecovery(
+  private val context: Context,
   private val logger: UpdatesLogger
 ) {
   internal val handlerThread = HandlerThread("expo-updates-error-recovery")
@@ -65,6 +68,14 @@ class ErrorRecovery(
 
   internal fun handleException(exception: Exception) {
     logger.error("ErrorRecovery: exception encountered: ${exception.localizedMessage}", exception, UpdatesErrorCode.Unknown)
+
+    try {
+      val errorLogFile = File(context.filesDir, "expo-error.log")
+      errorLogFile.writeText("Fatal error: ${exception.message ?: "unknown error"}", Charsets.UTF_8)
+    } catch (e: Exception) {
+      logger.error("ErrorRecovery: failed to write fatal error", e, UpdatesErrorCode.Unknown)
+    }
+
     handler.sendMessage(handler.obtainMessage(ErrorRecoveryHandler.MessageType.EXCEPTION_ENCOUNTERED, exception))
   }
 
