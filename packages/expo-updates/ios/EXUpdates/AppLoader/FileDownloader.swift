@@ -296,10 +296,12 @@ public final class FileDownloader {
     request.setValue(config.runtimeVersion, forHTTPHeaderField: "Expo-Runtime-Version")
 
     if let previousFatalError = ErrorRecovery.consumeErrorLog(logger: logger) {
-      // some servers can have max length restrictions for headers,
-      // so we restrict the length of the string to 1024 characters --
-      // this should satisfy the requirements of most servers
-      request.setValue(previousFatalError.truncate(toMaxLength: 1024), forHTTPHeaderField: "Expo-Fatal-Error")
+      let sanitized = previousFatalError
+        .replacingOccurrences(of: "\n", with: " ␤ ")
+        .truncate(toMaxLength: 1024)
+
+      logger.info(message: "[FileDownloader] Sanitized Fatal Error Header: \(sanitized)")
+      request.setValue(sanitized, forHTTPHeaderField: "Expo-Fatal-Error")
     }
 
     for (key, value) in config.requestHeaders {
