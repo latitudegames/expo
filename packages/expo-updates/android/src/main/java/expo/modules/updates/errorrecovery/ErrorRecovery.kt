@@ -2,7 +2,6 @@ package expo.modules.updates.errorrecovery
 
 import android.os.Handler
 import android.os.HandlerThread
-import com.facebook.react.bridge.DefaultJSExceptionHandler
 import com.facebook.react.bridge.JSExceptionHandler
 import com.facebook.react.bridge.ReactMarker
 import com.facebook.react.bridge.ReactMarker.MarkerListener
@@ -34,7 +33,7 @@ class ErrorRecovery(
   internal lateinit var handler: Handler
 
   private var weakDevSupportManager: WeakReference<DevSupportManager>? = null
-  private var previousExceptionHandler: DefaultJSExceptionHandler? = null
+  private var previousExceptionHandler: JSExceptionHandler? = null
   private var shouldHandleReactInstanceException = false
 
   fun initialize(delegate: ErrorRecoveryDelegate) {
@@ -122,7 +121,7 @@ class ErrorRecovery(
       field.isAccessible = true
       val previousValue = field[devSupportManager]
       field[devSupportManager] = defaultJSExceptionHandler
-      return@let previousValue as DefaultJSExceptionHandler
+      return@let previousValue as JSExceptionHandler
     }
     weakDevSupportManager = WeakReference(devSupportManager)
   }
