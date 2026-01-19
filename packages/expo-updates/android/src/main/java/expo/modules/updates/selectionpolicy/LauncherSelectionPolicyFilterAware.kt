@@ -10,7 +10,7 @@ import org.json.JSONObject
  * for ordering) is chosen, but the manifest filters are always taken into account before the
  * `commitTime`.
  *
- * Additionally filters by updateUrl and requestHeaders to ensure channel-specific updates are
+ * Additionally filters by channel/branch to ensure channel-specific updates are
  * selected when a runtime configuration override is in effect.
  */
 class LauncherSelectionPolicyFilterAware(
@@ -21,16 +21,27 @@ class LauncherSelectionPolicyFilterAware(
   override fun selectUpdateToLaunch(
     updates: List<UpdateEntity>,
     filters: JSONObject?
-  ): UpdateEntity? =
-    updates
+  ): UpdateEntity? {
+    // Get the target channel from config request headers
+    val targetChannel = config?.requestHeaders?.get("expo-channel-name")
+
+    return updates
       .filter { runtimeVersion == it.runtimeVersion && SelectionPolicies.matchesFilters(it, filters) }
       .filter { update ->
-        // If no config is provided, accept all updates (backwards compatibility)
-        if (config == null) return@filter true
-        // If update has no url/headers stored, it's an embedded or legacy update - accept it
-        if (update.url == null && update.requestHeaders == null) return@filter true
-        // Otherwise, only accept updates that match the current config
-        update.url == config.updateUrl && update.requestHeaders == config.requestHeaders
+        // If no target channel is configured, accept all updates (backwards compatibility)
+        if (targetChannel == null) return@filter true
+
+        // Try to extract the branch/channel from the update's manifest
+        val manifest = update.manifest
+        val updateBranch = manifest.optString("branch", null)
+          ?: manifest.optJSONObject("extra")?.optJSONObject("expoClient")?.optJSONObject("extra")?.optString("LATITUDE_RELEASE_STAGE", null)
+
+        // If update has no branch info, it's an embedded or legacy update - accept it
+        if (updateBranch == null) return@filter true
+
+        // Only accept updates that match the target channel
+        updateBranch == targetChannel
       }
       .maxByOrNull { it.commitTime }
+  }
 }
