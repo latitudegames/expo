@@ -100,7 +100,8 @@ public final class DevLauncherAppController: NSObject, InternalAppControllerInte
     self.database = updatesDatabase
     self.directoryDatabaseException = directoryDatabaseException
     self.defaultSelectionPolicy = SelectionPolicyFactory.filterAwarePolicy(
-      withRuntimeVersion: initialUpdatesConfiguration.let { it in it.runtimeVersion } ?? "1"
+      withRuntimeVersion: initialUpdatesConfiguration.let { it in it.runtimeVersion } ?? "1",
+      config: initialUpdatesConfiguration
     )
 
     super.init()

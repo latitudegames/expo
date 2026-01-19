@@ -33,7 +33,7 @@ public class EnabledAppController: InternalAppControllerInterface, StartupProced
 
   private let stateMachine: UpdatesStateMachine
 
-  private let selectionPolicy: SelectionPolicy
+  private let initialSelectionPolicy: SelectionPolicy
 
   private let logger = UpdatesLogger()
 
@@ -52,8 +52,9 @@ public class EnabledAppController: InternalAppControllerInterface, StartupProced
     self.database = database
     self.updatesDirectoryInternal = updatesDirectory
     self.updatesDirectory = updatesDirectory
-    self.selectionPolicy = SelectionPolicyFactory.filterAwarePolicy(
-      withRuntimeVersion: self.config.runtimeVersion
+    self.initialSelectionPolicy = SelectionPolicyFactory.filterAwarePolicy(
+      withRuntimeVersion: self.config.runtimeVersion,
+      config: self.config
     )
     self.logger.info(message: "AppController sharedInstance created")
     self.eventManager = QueueUpdatesEventManager(logger: logger)
@@ -73,7 +74,7 @@ public class EnabledAppController: InternalAppControllerInterface, StartupProced
     startupProcedure = StartupProcedure(
       database: self.database,
       config: self.resolveConfiguration(),
-      selectionPolicy: self.selectionPolicy,
+      selectionPolicy: self.initialSelectionPolicy,
       controllerQueue: self.controllerQueue,
       updatesDirectory: self.updatesDirectoryInternal,
       logger: self.logger
@@ -108,14 +109,21 @@ public class EnabledAppController: InternalAppControllerInterface, StartupProced
       return config
     }
     return self.config
-    
+  }
+
+  func resolveSelectionPolicy() -> SelectionPolicy {
+    if self.hasConfigOverride {
+      let config = resolveConfiguration()
+      return SelectionPolicyFactory.filterAwarePolicy(withRuntimeVersion: config.runtimeVersion, config: config)
+    }
+    return self.initialSelectionPolicy
   }
 
   func startupProcedure(_ startupProcedure: StartupProcedure, errorRecoveryDidRequestRelaunchWithCompletion completion: @escaping (Error?, Bool) -> Void) {
     let procedure = RelaunchProcedure(
       database: self.database,
       config: self.resolveConfiguration(),
-      selectionPolicy: self.selectionPolicy,
+      selectionPolicy: self.resolveSelectionPolicy(),
       controllerQueue: self.controllerQueue,
       updatesDirectory: self.updatesDirectoryInternal,
       logger: self.logger,
@@ -143,7 +151,7 @@ public class EnabledAppController: InternalAppControllerInterface, StartupProced
     let procedure = RelaunchProcedure(
       database: self.database,
       config: self.resolveConfiguration(),
-      selectionPolicy: self.selectionPolicy,
+      selectionPolicy: self.resolveSelectionPolicy(),
       controllerQueue: self.controllerQueue,
       updatesDirectory: self.updatesDirectoryInternal,
       logger: self.logger,
@@ -197,7 +205,7 @@ public class EnabledAppController: InternalAppControllerInterface, StartupProced
     let procedure = CheckForUpdateProcedure(
       database: self.database,
       config: self.resolveConfiguration(),
-      selectionPolicy: self.selectionPolicy,
+      selectionPolicy: self.resolveSelectionPolicy(),
       logger: self.logger
     ) {
       return self.startupProcedure.launchedUpdate()
@@ -216,7 +224,7 @@ public class EnabledAppController: InternalAppControllerInterface, StartupProced
     let procedure = FetchUpdateProcedure(
       database: self.database,
       config: self.resolveConfiguration(),
-      selectionPolicy: self.selectionPolicy,
+      selectionPolicy: self.resolveSelectionPolicy(),
       controllerQueue: self.controllerQueue,
       updatesDirectory: self.updatesDirectoryInternal,
       logger: self.logger

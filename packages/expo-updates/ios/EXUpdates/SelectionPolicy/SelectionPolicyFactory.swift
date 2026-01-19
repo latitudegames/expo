@@ -9,9 +9,9 @@ import Foundation
 @objc(EXUpdatesSelectionPolicyFactory)
 @objcMembers
 public final class SelectionPolicyFactory: NSObject {
-  public static func filterAwarePolicy(withRuntimeVersion runtimeVersion: String) -> SelectionPolicy {
+  public static func filterAwarePolicy(withRuntimeVersion runtimeVersion: String, config: UpdatesConfig? = nil) -> SelectionPolicy {
     return SelectionPolicy.init(
-      launcherSelectionPolicy: LauncherSelectionPolicyFilterAware.init(runtimeVersion: runtimeVersion),
+      launcherSelectionPolicy: LauncherSelectionPolicyFilterAware.init(runtimeVersion: runtimeVersion, config: config),
       loaderSelectionPolicy: LoaderSelectionPolicyFilterAware(),
       reaperSelectionPolicy: ReaperSelectionPolicyFilterAware()
     )

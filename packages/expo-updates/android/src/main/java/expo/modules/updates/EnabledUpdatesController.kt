@@ -46,8 +46,9 @@ class EnabledUpdatesController(
   override val eventManager: IUpdatesEventManager = UpdatesEventManager(logger)
 
   private val fileDownloader = FileDownloader(context, updatesConfiguration, logger)
-  private val selectionPolicy = SelectionPolicyFactory.createFilterAwarePolicy(
-    updatesConfiguration.getRuntimeVersion()
+  private val initialSelectionPolicy = SelectionPolicyFactory.createFilterAwarePolicy(
+    updatesConfiguration.getRuntimeVersion(),
+    updatesConfiguration
   )
   private val stateMachine = UpdatesStateMachine(logger, eventManager, UpdatesStateValue.entries.toSet())
   private val databaseHolder = DatabaseHolder(UpdatesDatabase.getInstance(context))
@@ -79,7 +80,7 @@ class EnabledUpdatesController(
     databaseHolder,
     updatesDirectory,
     fileDownloader,
-    selectionPolicy,
+    initialSelectionPolicy,
     logger,
     object : StartupProcedure.StartupProcedureCallback {
       override fun onFinished() {
@@ -175,6 +176,14 @@ class EnabledUpdatesController(
     return newConfig
   }
 
+  private fun resolveSelectionPolicy(): expo.modules.updates.selectionpolicy.SelectionPolicy {
+    if (!hasConfigOverride) {
+      return initialSelectionPolicy
+    }
+    val config = resolveConfiguration()
+    return SelectionPolicyFactory.createFilterAwarePolicy(config.getRuntimeVersion(), config)
+  }
+
   private fun relaunchReactApplication(shouldRunReaper: Boolean, callback: LauncherCallback) {
     val configuration = resolveConfiguration()
     val downloader = resolveFileDownloader()
@@ -186,7 +195,7 @@ class EnabledUpdatesController(
       databaseHolder,
       updatesDirectory,
       downloader,
-      selectionPolicy,
+      resolveSelectionPolicy(),
       getCurrentLauncher = { startupProcedure.launcher!! },
       setCurrentLauncher = { currentLauncher -> startupProcedure.setLauncher(currentLauncher) },
       shouldRunReaper = shouldRunReaper,
@@ -236,7 +245,7 @@ class EnabledUpdatesController(
   override fun checkForUpdate(callback: IUpdatesController.ModuleCallback<IUpdatesController.CheckForUpdateResult>) {
     val configuration = resolveConfiguration()
     val downloader = resolveFileDownloader()
-    val procedure = CheckForUpdateProcedure(context, configuration, databaseHolder, logger, downloader, selectionPolicy, launchedUpdate) {
+    val procedure = CheckForUpdateProcedure(context, configuration, databaseHolder, logger, downloader, resolveSelectionPolicy(), launchedUpdate) {
       callback.onSuccess(it)
     }
     stateMachine.queueExecution(procedure)
@@ -245,7 +254,7 @@ class EnabledUpdatesController(
   override fun fetchUpdate(callback: IUpdatesController.ModuleCallback<IUpdatesController.FetchUpdateResult>) {
     val configuration = resolveConfiguration()
     val downloader = resolveFileDownloader()
-    val procedure = FetchUpdateProcedure(context, configuration, logger, databaseHolder, updatesDirectory, downloader, selectionPolicy, launchedUpdate) {
+    val procedure = FetchUpdateProcedure(context, configuration, logger, databaseHolder, updatesDirectory, downloader, resolveSelectionPolicy(), launchedUpdate) {
       callback.onSuccess(it)
     }
     stateMachine.queueExecution(procedure)
