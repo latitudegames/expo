@@ -113,8 +113,9 @@ public class EnabledAppController: InternalAppControllerInterface, StartupProced
 
   func resolveSelectionPolicy() -> SelectionPolicy {
     if self.hasConfigOverride {
+      // When there's a config override (channel switching), enable channel filtering
       let config = resolveConfiguration()
-      return SelectionPolicyFactory.filterAwarePolicy(withRuntimeVersion: config.runtimeVersion, config: config)
+      return SelectionPolicyFactory.filterAwarePolicy(withRuntimeVersion: config.runtimeVersion, config: config, filterByChannel: true)
     }
     return self.initialSelectionPolicy
   }

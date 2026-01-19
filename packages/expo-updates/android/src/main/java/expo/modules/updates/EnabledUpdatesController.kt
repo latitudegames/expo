@@ -180,8 +180,9 @@ class EnabledUpdatesController(
     if (!hasConfigOverride) {
       return initialSelectionPolicy
     }
+    // When there's a config override (channel switching), enable channel filtering
     val config = resolveConfiguration()
-    return SelectionPolicyFactory.createFilterAwarePolicy(config.getRuntimeVersion(), config)
+    return SelectionPolicyFactory.createFilterAwarePolicy(config.getRuntimeVersion(), config, filterByChannel = true)
   }
 
   private fun relaunchReactApplication(shouldRunReaper: Boolean, callback: LauncherCallback) {
