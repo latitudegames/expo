@@ -22,9 +22,7 @@ const NativeToolbarMenu = ({ accessibilityHint, accessibilityLabel, separateBack
         (iconComponent?.props && 'sf' in iconComponent.props ? iconComponent.props.sf : undefined);
     const sf = typeof computedIcon === 'string' ? computedIcon : undefined;
     const titleStyle = react_native_1.StyleSheet.flatten(style);
-    return (<native_1.NativeLinkPreviewAction sharesBackground={!separateBackground} hidesSharedBackground={hidesSharedBackground} hidden={hidden} icon={sf} 
-    // TODO(@ubax): Handle image loading using useImage in a follow-up PR.
-    image={image} destructive={destructive} subtitle={subtitle} accessibilityLabel={accessibilityLabel} accessibilityHint={accessibilityHint} displayAsPalette={palette} displayInline={inline} preferredElementSize={elementSize} tintColor={tintColor} titleStyle={titleStyle} barButtonItemStyle={variant === 'done' ? 'prominent' : variant} title={computedTitle} onSelected={() => { }} children={children} identifier={identifier}/>);
+    return (<native_1.NativeLinkPreviewAction sharesBackground={!separateBackground} hidesSharedBackground={hidesSharedBackground} hidden={hidden} icon={image ? undefined : sf} image={image} destructive={destructive} subtitle={subtitle} accessibilityLabel={accessibilityLabel} accessibilityHint={accessibilityHint} displayAsPalette={palette} displayInline={inline} preferredElementSize={elementSize} tintColor={tintColor} titleStyle={titleStyle} barButtonItemStyle={variant === 'done' ? 'prominent' : variant} title={computedTitle} onSelected={() => { }} children={children} identifier={identifier}/>);
 };
 exports.NativeToolbarMenu = NativeToolbarMenu;
 // #endregion

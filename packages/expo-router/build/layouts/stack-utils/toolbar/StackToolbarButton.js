@@ -3,6 +3,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.StackToolbarButton = void 0;
 exports.convertStackToolbarButtonPropsToRNHeaderItem = convertStackToolbarButtonPropsToRNHeaderItem;
+const expo_image_1 = require("expo-image");
 const bottom_toolbar_native_elements_1 = require("./bottom-toolbar-native-elements");
 const context_1 = require("./context");
 const shared_1 = require("../shared");
@@ -46,10 +47,18 @@ const shared_1 = require("../shared");
  */
 const StackToolbarButton = (props) => {
     const placement = (0, context_1.useToolbarPlacement)();
+    const { icon } = props;
+    // Determine if icon is an SF Symbol (prefixed with 'sf:')
+    const isSFSymbol = typeof icon === 'string' && icon.startsWith('sf:');
+    // useImage hook - called unconditionally (React hooks rule)
+    const loadedImage = (0, expo_image_1.useImage)((0, shared_1.getImageSourceFromIcon)(icon), {
+        maxWidth: 24,
+        maxHeight: 24,
+    });
     if (placement === 'bottom') {
-        // TODO(@ubax): Handle image loading using useImage in a follow-up PR.
-        const icon = typeof props.icon === 'string' ? props.icon : undefined;
-        return <bottom_toolbar_native_elements_1.NativeToolbarButton {...props} icon={icon} image={props.image}/>;
+        // For SF symbols, extract the name without 'sf:' prefix
+        const sfIconName = isSFSymbol ? icon.slice(3) : undefined;
+        return <bottom_toolbar_native_elements_1.NativeToolbarButton {...props} icon={sfIconName} image={loadedImage ?? props.image}/>;
     }
     return null;
 };

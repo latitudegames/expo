@@ -4,11 +4,9 @@ import type {
   NativeStackHeaderItemMenuAction,
   NativeStackHeaderItemMenuSubmenu,
 } from '@react-navigation/native-stack';
-import type { ImageRef } from 'expo-image';
+import { useImage, type ImageRef } from 'expo-image';
 import { Children, useMemo, type ReactNode } from 'react';
-import type { ImageSourcePropType } from 'react-native';
 import type { HeaderBarButtonItemSubmenu } from 'react-native-screens';
-import type { SFSymbol } from 'sf-symbols-typescript';
 
 import { NativeToolbarMenu, NativeToolbarMenuAction } from './bottom-toolbar-native-elements';
 import { useToolbarPlacement } from './context';
@@ -16,6 +14,7 @@ import { Menu, MenuAction } from '../../../primitives';
 import { filterAllowedChildrenElements, isChildOfType } from '../../../utils/children';
 import {
   convertStackHeaderSharedPropsToRNSharedHeaderItem,
+  getImageSourceFromIcon,
   type StackHeaderItemSharedProps,
 } from '../shared';
 
@@ -42,11 +41,18 @@ export interface StackToolbarMenuProps {
    */
   destructive?: boolean;
   disabled?: boolean;
-  // TODO(@ubax): Add useImage support in a follow-up PR.
+  /**
+   * Icon for the menu item.
+   *
+   * Can be a string representing an SFSymbol (prefixed with 'sf:'), url or an image source.
+   */
+  icon?: StackHeaderItemSharedProps['icon'];
   /**
    * Image to display for the menu item.
    *
-   * > **Note**: This prop is only supported in `Stack.Toolbar.Bottom`.
+   * > **Note**: If both `icon` and `image` are provided, `image` takes precedence.
+   *
+   * > **Note**: This prop is only supported in `Stack.Toolbar` with `placement="bottom"`.
    */
   image?: ImageRef;
   /**
@@ -63,12 +69,6 @@ export interface StackToolbarMenuProps {
    * @default false
    */
   hidden?: boolean;
-  /**
-   * Icon for the menu item.
-   *
-   * Can be an SF Symbol name or an image source.
-   */
-  icon?: StackHeaderItemSharedProps['icon'];
   /**
    * If `true`, the menu will be displayed inline.
    * This means that the menu will not be collapsed
@@ -157,6 +157,12 @@ export interface StackToolbarMenuProps {
  */
 export const StackToolbarMenu: React.FC<StackToolbarMenuProps> = ({ children, ...props }) => {
   const placement = useToolbarPlacement();
+  const { icon } = props;
+
+  const loadedImage = useImage(getImageSourceFromIcon(icon), {
+    maxWidth: 24,
+    maxHeight: 24,
+  });
 
   const allowedChildren = useMemo(
     () =>
@@ -181,8 +187,14 @@ export const StackToolbarMenu: React.FC<StackToolbarMenuProps> = ({ children, ..
   }
 
   if (placement === 'bottom') {
-    // TODO(@ubax): Handle image loading using useImage in a follow-up PR.
-    return <NativeToolbarMenu {...props} image={props.image} children={validChildren} />;
+    const { icon, image, ...rest } = props;
+    return (
+      <NativeToolbarMenu
+        {...rest}
+        image={image ?? loadedImage ?? undefined}
+        children={validChildren}
+      />
+    );
   }
 
   return <Menu {...props} children={validChildren} />;
@@ -285,12 +297,18 @@ export interface StackToolbarMenuActionProps {
    * @see [Apple documentation](https://developer.apple.com/documentation/uikit/uimenuelement/attributes/disabled) for more information.
    */
   disabled?: boolean;
-  icon?: SFSymbol | ImageSourcePropType;
-  // TODO(@ubax): Add useImage support in a follow-up PR.
+  /**
+   * Icon for the menu action.
+   *
+   * Can be a string representing an SFSymbol (prefixed with 'sf:'), url or an image source.
+   */
+  icon?: StackHeaderItemSharedProps['icon'];
   /**
    * Image to display for the menu action.
    *
-   * > **Note**: This prop is only supported in `Stack.Toolbar.Bottom`.
+   * > **Note**: If both `icon` and `image` are provided, `image` takes precedence.
+   *
+   * > **Note**: This prop is only supported in `Stack.Toolbar` with `placement="bottom"`.
    */
   image?: ImageRef;
   /**
@@ -353,11 +371,16 @@ export interface StackToolbarMenuActionProps {
  */
 export const StackToolbarMenuAction: React.FC<StackToolbarMenuActionProps> = (props) => {
   const placement = useToolbarPlacement();
+  const { icon } = props;
+
+  const loadedImage = useImage(getImageSourceFromIcon(icon), {
+    maxWidth: 24,
+    maxHeight: 24,
+  });
 
   if (placement === 'bottom') {
-    // TODO(@ubax): Handle image loading using useImage in a follow-up PR.
-    const icon = typeof props.icon === 'string' ? props.icon : undefined;
-    return <NativeToolbarMenuAction {...props} icon={icon} image={props.image} />;
+    const { icon, image, ...rest } = props;
+    return <NativeToolbarMenuAction {...rest} image={image ?? loadedImage} />;
   }
 
   return <MenuAction {...props} />;

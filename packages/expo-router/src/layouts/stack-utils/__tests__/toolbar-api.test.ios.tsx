@@ -1,3 +1,4 @@
+import React from 'react';
 import { Text, View } from 'react-native';
 import { ScreenStackItem as _ScreenStackItem } from 'react-native-screens';
 
@@ -13,6 +14,10 @@ jest.mock('react-native-screens', () => {
     ScreenStackItem: jest.fn((props) => <actualScreens.ScreenStackItem {...props} />),
   };
 });
+
+jest.mock('expo-image', () => ({
+  useImage: jest.fn(() => null),
+}));
 
 const ScreenStackItem = _ScreenStackItem as jest.MockedFunction<typeof _ScreenStackItem>;
 
@@ -203,7 +208,7 @@ describe('Stack.Toolbar unified API', () => {
           <Stack>
             <Stack.Screen name="index">
               <Stack.Toolbar placement="left">
-                <Stack.Toolbar.Button icon="sidebar.left" onPress={() => {}} />
+                <Stack.Toolbar.Button icon="sf:sidebar.left" onPress={() => {}} />
               </Stack.Toolbar>
             </Stack.Screen>
           </Stack>
@@ -226,9 +231,9 @@ describe('Stack.Toolbar unified API', () => {
           <Stack>
             <Stack.Screen name="index">
               <Stack.Toolbar placement="left">
-                <Stack.Toolbar.Button icon="star" onPress={() => {}} />
+                <Stack.Toolbar.Button icon="sf:star" onPress={() => {}} />
                 <Stack.Toolbar.Spacer width={8} />
-                <Stack.Toolbar.Button icon="heart" onPress={() => {}} />
+                <Stack.Toolbar.Button icon="sf:heart" onPress={() => {}} />
               </Stack.Toolbar>
             </Stack.Screen>
           </Stack>
@@ -252,7 +257,7 @@ describe('Stack.Toolbar unified API', () => {
         index: () => (
           <>
             <Stack.Toolbar placement="left">
-              <Stack.Toolbar.Button icon="star" onPress={() => {}} />
+              <Stack.Toolbar.Button icon="sf:star" onPress={() => {}} />
             </Stack.Toolbar>
             <Text testID="index">index</Text>
           </>
@@ -275,7 +280,7 @@ describe('Stack.Toolbar unified API', () => {
           <Stack>
             <Stack.Screen name="index">
               <Stack.Toolbar placement="right">
-                <Stack.Toolbar.Menu icon="ellipsis.circle">
+                <Stack.Toolbar.Menu icon="sf:ellipsis.circle">
                   <Stack.Toolbar.MenuAction onPress={() => {}}>Action 1</Stack.Toolbar.MenuAction>
                 </Stack.Toolbar.Menu>
               </Stack.Toolbar>
@@ -328,7 +333,7 @@ describe('Stack.Toolbar unified API', () => {
         index: () => (
           <>
             <Stack.Toolbar placement="right">
-              <Stack.Toolbar.Button icon="plus" onPress={() => {}} />
+              <Stack.Toolbar.Button icon="sf:plus" onPress={() => {}} />
             </Stack.Toolbar>
             <Text testID="index">index</Text>
           </>
@@ -354,7 +359,7 @@ describe('Stack.Toolbar unified API', () => {
           <>
             <Stack.Toolbar>
               <Stack.Toolbar.Spacer />
-              <Stack.Toolbar.Button icon="magnifyingglass" onPress={() => {}} />
+              <Stack.Toolbar.Button icon="sf:magnifyingglass" onPress={() => {}} />
               <Stack.Toolbar.Spacer />
             </Stack.Toolbar>
             <Text testID="index">index</Text>
@@ -374,9 +379,9 @@ describe('Stack.Toolbar unified API', () => {
         index: () => (
           <>
             <Stack.Toolbar>
-              <Stack.Toolbar.Button icon="star" onPress={() => {}} />
+              <Stack.Toolbar.Button icon="sf:star" onPress={() => {}} />
               <Stack.Toolbar.Spacer /> {/* flexible - no width */}
-              <Stack.Toolbar.Button icon="heart" onPress={() => {}} />
+              <Stack.Toolbar.Button icon="sf:heart" onPress={() => {}} />
             </Stack.Toolbar>
             <Text testID="index">index</Text>
           </>
@@ -395,7 +400,7 @@ describe('Stack.Toolbar unified API', () => {
             <Stack>
               <Stack.Screen name="index">
                 <Stack.Toolbar>
-                  <Stack.Toolbar.Button icon="star" onPress={() => {}} />
+                  <Stack.Toolbar.Button icon="sf:star" onPress={() => {}} />
                 </Stack.Toolbar>
               </Stack.Screen>
             </Stack>
@@ -414,7 +419,7 @@ describe('Stack.Toolbar unified API', () => {
           <>
             <Stack.Toolbar>
               <Stack.Toolbar.Spacer />
-              <Stack.Toolbar.Button icon="magnifyingglass" onPress={() => {}} />
+              <Stack.Toolbar.Button icon="sf:magnifyingglass" onPress={() => {}} />
               <Stack.Toolbar.Spacer />
             </Stack.Toolbar>
             <Text testID="index">index</Text>
@@ -438,11 +443,11 @@ describe('Stack.Toolbar unified API', () => {
               <Stack.Header blurEffect="systemMaterial" />
 
               <Stack.Toolbar placement="left">
-                <Stack.Toolbar.Button icon="sidebar.left" onPress={() => {}} />
+                <Stack.Toolbar.Button icon="sf:sidebar.left" onPress={() => {}} />
               </Stack.Toolbar>
 
               <Stack.Toolbar placement="right">
-                <Stack.Toolbar.Menu icon="ellipsis.circle">
+                <Stack.Toolbar.Menu icon="sf:ellipsis.circle">
                   <Stack.Toolbar.MenuAction onPress={() => {}}>Settings</Stack.Toolbar.MenuAction>
                 </Stack.Toolbar.Menu>
               </Stack.Toolbar>
@@ -453,7 +458,7 @@ describe('Stack.Toolbar unified API', () => {
           <>
             <Stack.Toolbar>
               <Stack.Toolbar.Spacer />
-              <Stack.Toolbar.Button icon="mic" onPress={() => {}} />
+              <Stack.Toolbar.Button icon="sf:mic" onPress={() => {}} />
               <Stack.Toolbar.Spacer />
             </Stack.Toolbar>
             <Text testID="index">index</Text>
@@ -487,10 +492,10 @@ describe('Stack.Toolbar unified API', () => {
           <>
             <Stack.Screen.Title>Dynamic Title</Stack.Screen.Title>
             <Stack.Toolbar placement="right">
-              <Stack.Toolbar.Button icon="plus" onPress={() => {}} />
+              <Stack.Toolbar.Button icon="sf:plus" onPress={() => {}} />
             </Stack.Toolbar>
             <Stack.Toolbar>
-              <Stack.Toolbar.Button icon="star" onPress={() => {}} />
+              <Stack.Toolbar.Button icon="sf:star" onPress={() => {}} />
             </Stack.Toolbar>
             <Text testID="index">index</Text>
           </>
@@ -543,8 +548,8 @@ describe('Stack.Toolbar unified API', () => {
           <Stack>
             <Stack.Screen name="index">
               <Stack.Toolbar placement="right">
-                <Stack.Toolbar.Button hidden icon="star" onPress={() => {}} />
-                <Stack.Toolbar.Button icon="heart" onPress={() => {}} />
+                <Stack.Toolbar.Button hidden icon="sf:star" onPress={() => {}} />
+                <Stack.Toolbar.Button icon="sf:heart" onPress={() => {}} />
               </Stack.Toolbar>
             </Stack.Screen>
           </Stack>
@@ -564,10 +569,10 @@ describe('Stack.Toolbar unified API', () => {
           <Stack>
             <Stack.Screen name="index">
               <Stack.Toolbar placement="right">
-                <Stack.Toolbar.Menu hidden icon="ellipsis.circle">
+                <Stack.Toolbar.Menu hidden icon="sf:ellipsis.circle">
                   <Stack.Toolbar.MenuAction onPress={() => {}}>Hidden</Stack.Toolbar.MenuAction>
                 </Stack.Toolbar.Menu>
-                <Stack.Toolbar.Menu icon="plus.circle">
+                <Stack.Toolbar.Menu icon="sf:plus.circle">
                   <Stack.Toolbar.MenuAction onPress={() => {}}>Visible</Stack.Toolbar.MenuAction>
                 </Stack.Toolbar.Menu>
               </Stack.Toolbar>
@@ -620,7 +625,7 @@ describe('Stack.Toolbar unified API', () => {
           <Stack>
             <Stack.Screen name="index">
               <Stack.Toolbar placement="right">
-                <Stack.Toolbar.Menu icon="ellipsis.circle">
+                <Stack.Toolbar.Menu icon="sf:ellipsis.circle">
                   <Stack.Toolbar.MenuAction onPress={() => {}}>Action 1</Stack.Toolbar.MenuAction>
                   <Stack.Toolbar.Menu inline title="Submenu">
                     <Stack.Toolbar.MenuAction onPress={() => {}}>
@@ -651,10 +656,10 @@ describe('Stack.Toolbar unified API', () => {
           <Stack>
             <Stack.Screen name="index">
               <Stack.Toolbar placement="right">
-                <Stack.Toolbar.Menu icon="ellipsis.circle">
+                <Stack.Toolbar.Menu icon="sf:ellipsis.circle">
                   <Stack.Toolbar.Menu palette title="Quick Actions">
-                    <Stack.Toolbar.MenuAction icon="star" isOn onPress={() => {}} />
-                    <Stack.Toolbar.MenuAction icon="heart" onPress={() => {}} />
+                    <Stack.Toolbar.MenuAction icon="sf:star" isOn onPress={() => {}} />
+                    <Stack.Toolbar.MenuAction icon="sf:heart" onPress={() => {}} />
                   </Stack.Toolbar.Menu>
                 </Stack.Toolbar.Menu>
               </Stack.Toolbar>

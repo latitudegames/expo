@@ -1,13 +1,15 @@
 'use client';
 import type { NativeStackHeaderItemButton } from '@react-navigation/native-stack';
-import type { ImageRef } from 'expo-image';
+import { useImage, type ImageRef } from 'expo-image';
 import type { ReactNode } from 'react';
 import type { StyleProp, TextStyle } from 'react-native';
+import type { SFSymbol } from 'sf-symbols-typescript';
 
 import { NativeToolbarButton } from './bottom-toolbar-native-elements';
 import { useToolbarPlacement } from './context';
 import {
   convertStackHeaderSharedPropsToRNSharedHeaderItem,
+  getImageSourceFromIcon,
   type StackHeaderItemSharedProps,
 } from '../shared';
 
@@ -72,14 +74,15 @@ export interface StackToolbarButtonProps {
   /**
    * Icon to display in the button.
    *
-   * Can be a string representing an SFSymbol or an image source.
+   * Can be a string representing an SFSymbol (prefixed with 'sf:'), url or an image source.
    */
   icon?: StackHeaderItemSharedProps['icon'];
-  // TODO(@ubax): Add useImage support in a follow-up PR.
   /**
    * Image to display in the button.
    *
-   * > **Note**: This prop is only supported in `Stack.Toolbar.Bottom`.
+   * > **Note**: If both `icon` and `image` are provided, `image` takes precedence.
+   *
+   * > **Note**: This prop is only supported in `Stack.Toolbar` with `placement="bottom"`.
    */
   image?: ImageRef;
   onPress?: () => void;
@@ -151,11 +154,22 @@ export interface StackToolbarButtonProps {
  */
 export const StackToolbarButton: React.FC<StackToolbarButtonProps> = (props) => {
   const placement = useToolbarPlacement();
+  const { icon } = props;
+
+  // Determine if icon is an SF Symbol (prefixed with 'sf:')
+  const isSFSymbol = typeof icon === 'string' && icon.startsWith('sf:');
+
+  // useImage hook - called unconditionally (React hooks rule)
+  const loadedImage = useImage(getImageSourceFromIcon(icon), {
+    maxWidth: 24,
+    maxHeight: 24,
+  });
 
   if (placement === 'bottom') {
-    // TODO(@ubax): Handle image loading using useImage in a follow-up PR.
-    const icon = typeof props.icon === 'string' ? props.icon : undefined;
-    return <NativeToolbarButton {...props} icon={icon} image={props.image} />;
+    // For SF symbols, extract the name without 'sf:' prefix
+    const sfIconName = isSFSymbol ? (icon.slice(3) as SFSymbol) : undefined;
+
+    return <NativeToolbarButton {...props} icon={sfIconName} image={loadedImage ?? props.image} />;
   }
 
   return null;
