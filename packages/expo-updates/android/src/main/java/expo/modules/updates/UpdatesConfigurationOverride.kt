@@ -40,7 +40,9 @@ data class UpdatesConfigurationOverride(
         } else {
           remove(UPDATES_PREFS_KEY_UPDATES_CONFIGURATION_OVERRIDE)
         }
-        apply()
+        // Use commit() instead of apply() to ensure the override is persisted before app restart
+        // This prevents a race condition where the app restarts before the async write completes
+        commit()
       }
     }
 

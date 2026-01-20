@@ -29,5 +29,8 @@ public struct UpdatesConfigOverride: Codable {
     } else {
       UserDefaults.standard.removeObject(forKey: kUpdatesConfigOverride)
     }
+    // Force synchronize to ensure the override is persisted before app restart
+    // This prevents a race condition where the app restarts before the write completes
+    UserDefaults.standard.synchronize()
   }
 }

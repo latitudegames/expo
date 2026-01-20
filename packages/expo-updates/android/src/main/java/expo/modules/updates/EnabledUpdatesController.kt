@@ -45,10 +45,16 @@ class EnabledUpdatesController(
   private val logger = UpdatesLogger(context)
   override val eventManager: IUpdatesEventManager = UpdatesEventManager(logger)
 
+  // Check if there's a persisted config override (e.g., from a previous channel switch)
+  // This is needed to ensure the correct update is launched after restart
+  private val persistedOverride = UpdatesConfigurationOverride.load(context)
+  private val hasPersistedOverride = persistedOverride != null && updatesConfiguration.disableAntiBrickingMeasures
+
   private val fileDownloader = FileDownloader(context, updatesConfiguration, logger)
   private val initialSelectionPolicy = SelectionPolicyFactory.createFilterAwarePolicy(
     updatesConfiguration.getRuntimeVersion(),
-    updatesConfiguration
+    updatesConfiguration,
+    filterByChannel = hasPersistedOverride  // Enable channel filtering if there's a persisted override
   )
   private val stateMachine = UpdatesStateMachine(logger, eventManager, UpdatesStateValue.entries.toSet())
   private val databaseHolder = DatabaseHolder(UpdatesDatabase.getInstance(context))
@@ -65,7 +71,7 @@ class EnabledUpdatesController(
   private var isStartupFinished = false
   private var startupStartTimeMillis: Long? = null
   private var startupEndTimeMillis: Long? = null
-  private var hasConfigOverride: Boolean = false
+  private var hasConfigOverride: Boolean = hasPersistedOverride  // Initialize from persisted state
 
   @Synchronized
   private fun onStartupProcedureFinished() {

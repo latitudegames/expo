@@ -21,7 +21,13 @@ public class EnabledAppController: InternalAppControllerInterface, StartupProced
   private var isStarted = false
   private var startupStartTime: DispatchTime?
   private var startupEndTime: DispatchTime?
-  private var hasConfigOverride = false
+  
+  // Check if there's a persisted config override (e.g., from a previous channel switch)
+  private let persistedOverride = UpdatesConfigOverride.load()
+  private lazy var hasPersistedOverride: Bool = {
+    return self.persistedOverride != nil && self.config.disableAntiBrickingMeasures
+  }()
+  private lazy var hasConfigOverride: Bool = hasPersistedOverride
 
   private var launchDuration: Double? {
     return startupStartTime.let({ start in
@@ -52,9 +58,13 @@ public class EnabledAppController: InternalAppControllerInterface, StartupProced
     self.database = database
     self.updatesDirectoryInternal = updatesDirectory
     self.updatesDirectory = updatesDirectory
+    
+    // Check if there's a persisted config override to determine if channel filtering should be enabled
+    let persistedOverrideExists = UpdatesConfigOverride.load() != nil && config.disableAntiBrickingMeasures
     self.initialSelectionPolicy = SelectionPolicyFactory.filterAwarePolicy(
       withRuntimeVersion: self.config.runtimeVersion,
-      config: self.config
+      config: self.config,
+      filterByChannel: persistedOverrideExists  // Enable channel filtering if there's a persisted override
     )
     self.logger.info(message: "AppController sharedInstance created")
     self.eventManager = QueueUpdatesEventManager(logger: logger)
