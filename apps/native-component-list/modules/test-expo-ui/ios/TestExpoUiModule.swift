@@ -15,6 +15,6 @@ public class TestExpoUiModule: Module {
       ViewModifierRegistry.unregister("customBorder")
     }
 
-    ExpoUIView(TestGroupView.self)
+    ExpoUIView(MyCustomView.self)
   }
 }
