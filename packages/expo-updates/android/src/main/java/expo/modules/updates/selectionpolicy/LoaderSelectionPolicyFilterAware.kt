@@ -10,8 +10,13 @@ import org.json.JSONObject
  * matches the given manifest filters.
  *
  * Uses `commitTime` to determine ordering of updates.
+ *
+ * When `disableAntiBrickingMeasures` is true, the commit time check is bypassed to allow
+ * switching between channels even when the target channel has an older update.
  */
-class LoaderSelectionPolicyFilterAware : LoaderSelectionPolicy {
+class LoaderSelectionPolicyFilterAware(
+  private val disableAntiBrickingMeasures: Boolean = false
+) : LoaderSelectionPolicy {
   override fun shouldLoadNewUpdate(
     newUpdate: UpdateEntity?,
     launchedUpdate: UpdateEntity?,
@@ -29,11 +34,16 @@ class LoaderSelectionPolicyFilterAware : LoaderSelectionPolicy {
     }
     // if the current update doesn't pass the manifest filters
     // we should load the new update no matter the commitTime
-    return if (!SelectionPolicies.matchesFilters(launchedUpdate, filters)) {
-      true
-    } else {
-      newUpdate.commitTime.after(launchedUpdate.commitTime)
+    if (!SelectionPolicies.matchesFilters(launchedUpdate, filters)) {
+      return true
     }
+    // When anti-bricking measures are disabled (channel switching enabled),
+    // always load the update regardless of commit time. This allows switching
+    // to channels that may have older updates than the current one.
+    if (disableAntiBrickingMeasures) {
+      return true
+    }
+    return newUpdate.commitTime.after(launchedUpdate.commitTime)
   }
 
   override fun shouldLoadRollBackToEmbeddedDirective(

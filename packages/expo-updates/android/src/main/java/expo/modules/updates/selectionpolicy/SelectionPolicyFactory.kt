@@ -12,9 +12,12 @@ object SelectionPolicyFactory {
     config: UpdatesConfiguration? = null,
     filterByChannel: Boolean = false
   ): SelectionPolicy {
+    // When disableAntiBrickingMeasures is enabled, pass it to the loader selection policy
+    // to allow loading updates with older commit times (needed for channel switching)
+    val disableAntiBrickingMeasures = config?.disableAntiBrickingMeasures ?: false
     return SelectionPolicy(
       LauncherSelectionPolicyFilterAware(runtimeVersion, config, filterByChannel),
-      LoaderSelectionPolicyFilterAware(),
+      LoaderSelectionPolicyFilterAware(disableAntiBrickingMeasures),
       ReaperSelectionPolicyFilterAware()
     )
   }

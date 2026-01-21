@@ -8,10 +8,19 @@ import Foundation
  * matches the given manifest filters.
  *
  * Uses `commitTime` to determine ordering of updates.
+ *
+ * When `disableAntiBrickingMeasures` is true, the commit time check is bypassed to allow
+ * switching between channels even when the target channel has an older update.
  */
 @objc(EXUpdatesLoaderSelectionPolicyFilterAware)
 @objcMembers
 public final class LoaderSelectionPolicyFilterAware: NSObject, LoaderSelectionPolicy {
+  private let disableAntiBrickingMeasures: Bool
+
+  public init(disableAntiBrickingMeasures: Bool = false) {
+    self.disableAntiBrickingMeasures = disableAntiBrickingMeasures
+  }
+
   public func shouldLoadNewUpdate(_ newUpdate: Update?, withLaunchedUpdate launchedUpdate: Update?, filters: [String: Any]?) -> Bool {
     guard let newUpdate = newUpdate,
       SelectionPolicies.doesUpdate(newUpdate, matchFilters: filters) else {
@@ -25,6 +34,13 @@ public final class LoaderSelectionPolicyFilterAware: NSObject, LoaderSelectionPo
     // if the current update doesn't pass the manifest filters
     // we should load the new update no matter the commitTime
     if !SelectionPolicies.doesUpdate(launchedUpdate, matchFilters: filters) {
+      return true
+    }
+
+    // When anti-bricking measures are disabled (channel switching enabled),
+    // always load the update regardless of commit time. This allows switching
+    // to channels that may have older updates than the current one.
+    if disableAntiBrickingMeasures {
       return true
     }
 
