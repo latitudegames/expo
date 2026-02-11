@@ -177,7 +177,7 @@ class LauncherSelectionPolicyFilterAwareTest {
 
   @Test
   fun `should only return update matching override URL and headers`() {
-    val launcherPolicy = LauncherSelectionPolicyFilterAware(runtimeVersion, configWithOverride)
+    val launcherPolicy = LauncherSelectionPolicyFilterAware(runtimeVersion, config = configWithOverride)
     val updates = listOf(
       updateWithOverrideUrl,
       updateWithDifferentUrl,
@@ -217,7 +217,7 @@ class LauncherSelectionPolicyFilterAwareTest {
       )
     )
 
-    val launcherPolicy = LauncherSelectionPolicyFilterAware(runtimeVersion, configWithOverride)
+    val launcherPolicy = LauncherSelectionPolicyFilterAware(runtimeVersion, config = configWithOverride)
     val updates = listOf(
       updateWithOverrideUrl,
       updateWithDifferentUrl,
@@ -232,7 +232,7 @@ class LauncherSelectionPolicyFilterAwareTest {
 
   @Test
   fun `should return null when no updates match override URL`() {
-    val launcherPolicy = LauncherSelectionPolicyFilterAware(runtimeVersion, configWithOverride)
+    val launcherPolicy = LauncherSelectionPolicyFilterAware(runtimeVersion, config = configWithOverride)
     val updates = listOf(updateWithDifferentUrl).map { it.updateEntity }
     val result = launcherPolicy.selectUpdateToLaunch(updates, manifestFilters)
     Truth.assertThat(result).isNull()
@@ -240,7 +240,7 @@ class LauncherSelectionPolicyFilterAwareTest {
 
   @Test
   fun `should return null when no updates match override headers`() {
-    val launcherPolicy = LauncherSelectionPolicyFilterAware(runtimeVersion, configWithOverride)
+    val launcherPolicy = LauncherSelectionPolicyFilterAware(runtimeVersion, config = configWithOverride)
     val updates = listOf(updateWithDifferentHeaders).map { it.updateEntity }
     val result = launcherPolicy.selectUpdateToLaunch(updates, manifestFilters)
     Truth.assertThat(result).isNull()

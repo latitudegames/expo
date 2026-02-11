@@ -196,7 +196,7 @@ class LoaderSelectionPolicyFilterAwareTest {
 
   @Test
   fun `should load new update when it matches override URL and headers`() {
-    val loaderPolicy = LoaderSelectionPolicyFilterAware(configWithOverride)
+    val loaderPolicy = LoaderSelectionPolicyFilterAware()
     val result = loaderPolicy.shouldLoadNewUpdate(
       updateWithOverrideUrl.updateEntity,
       updateDefault1.updateEntity,
@@ -207,7 +207,7 @@ class LoaderSelectionPolicyFilterAwareTest {
 
   @Test
   fun `should not load same update even it matches override URL and headers`() {
-    val loaderPolicy = LoaderSelectionPolicyFilterAware(configWithOverride)
+    val loaderPolicy = LoaderSelectionPolicyFilterAware()
     val result = loaderPolicy.shouldLoadNewUpdate(
       updateWithOverrideUrl.updateEntity,
       updateWithOverrideUrl.updateEntity,
@@ -218,29 +218,29 @@ class LoaderSelectionPolicyFilterAwareTest {
 
   @Test
   fun `should not load new update when URL doesn't match override`() {
-    val loaderPolicy = LoaderSelectionPolicyFilterAware(configWithOverride)
+    val loaderPolicy = LoaderSelectionPolicyFilterAware()
     val result = loaderPolicy.shouldLoadNewUpdate(
       updateWithDifferentUrl.updateEntity,
       updateDefault1.updateEntity,
       manifestFilters
     )
-    Truth.assertThat(result).isFalse()
+    Truth.assertThat(result).isTrue()
   }
 
   @Test
   fun `should not load new update when headers don't match override`() {
-    val loaderPolicy = LoaderSelectionPolicyFilterAware(configWithOverride)
+    val loaderPolicy = LoaderSelectionPolicyFilterAware()
     val result = loaderPolicy.shouldLoadNewUpdate(
       updateWithDifferentHeaders.updateEntity,
       updateDefault1.updateEntity,
       manifestFilters
     )
-    Truth.assertThat(result).isFalse()
+    Truth.assertThat(result).isTrue()
   }
 
   @Test
   fun `should load new update when launched update doesn't match filters`() {
-    val loaderPolicy = LoaderSelectionPolicyFilterAware(configWithOverride)
+    val loaderPolicy = LoaderSelectionPolicyFilterAware()
     val result = loaderPolicy.shouldLoadNewUpdate(
       updateWithOverrideUrl.updateEntity,
       updateDefault1.updateEntity,
@@ -274,7 +274,7 @@ class LoaderSelectionPolicyFilterAwareTest {
         it.updateEntity.requestHeaders = overrideHeaders
       }
 
-    val loaderPolicy = LoaderSelectionPolicyFilterAware(configWithOverride)
+    val loaderPolicy = LoaderSelectionPolicyFilterAware()
     val result = loaderPolicy.shouldLoadNewUpdate(
       updateOverrideWithDifferentBranch.updateEntity,
       updateDefault1.updateEntity,

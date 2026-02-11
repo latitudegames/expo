@@ -19,7 +19,7 @@ public struct UpdatesConfigOverride: Codable {
     return try? decoder.decode(UpdatesConfigOverride.self, from: Data(data))
   }
 
-  internal static func save(configOverride: UpdatesConfigOverride?) {
+  internal static func save(_ configOverride: UpdatesConfigOverride?) {
     if let configOverride {
       let encoder = JSONEncoder()
       guard let data = try? encoder.encode(configOverride) else {
@@ -29,6 +29,7 @@ public struct UpdatesConfigOverride: Codable {
     } else {
       UserDefaults.standard.removeObject(forKey: kUpdatesConfigOverride)
     }
+    UserDefaults.standard.synchronize()
   }
 
   internal static func save(requestHeaders: [String: String]?) -> UpdatesConfigOverride? {
@@ -37,7 +38,7 @@ public struct UpdatesConfigOverride: Codable {
       requestHeaders: requestHeaders
     )
     let finalOverride = (newOverride.updateUrl != nil || newOverride.requestHeaders != nil) ? newOverride : nil
-    save(configOverride: finalOverride)
+    save(finalOverride)
     return finalOverride
   }
 }

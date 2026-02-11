@@ -98,7 +98,7 @@ abstract class ExpoUpdatesPlugin : Plugin<Project> {
     private fun getExpoUpdatesPackageDir(): String {
       val stdoutBuffer = ByteArrayOutputStream()
       execOperations.exec {
-        val args = listOf(*nodeExecutableAndArgs.get().toTypedArray(), "-e", "console.log(require('path').dirname(require.resolve('expo-updates/package.json')));")
+        val args = listOf(*nodeExecutableAndArgs.get().toTypedArray(), "-e", "console.log(require('path').dirname(require.resolve('@latitudegames/expo-updates/package.json')));")
         if (Os.isFamily(Os.FAMILY_WINDOWS)) {
           it.commandLine("cmd", "/c", *args.toTypedArray())
         } else {

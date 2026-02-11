@@ -41,7 +41,7 @@ data class UpdatesConfigurationOverride(
 
     internal fun save(context: Context, configOverride: UpdatesConfigurationOverride?) {
       val prefs = context.getSharedPreferences(UPDATES_PREFS_FILE, Context.MODE_PRIVATE)
-      prefs.edit {
+      prefs.edit(commit = true) {
         if (configOverride != null) {
           putString(UPDATES_PREFS_KEY_UPDATES_CONFIGURATION_OVERRIDE, configOverride.toJSONObject().toString())
         } else {

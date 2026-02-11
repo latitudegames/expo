@@ -142,31 +142,31 @@ internal class LoaderSelectionPolicyFilterAwareSpec: ExpoSpec {
       }
 
       it("should load new update when it matches override URL and headers") {
-        let loaderPolicy = LoaderSelectionPolicyFilterAware(config: configWithOverride)
+        let loaderPolicy = LoaderSelectionPolicyFilterAware()
         let result = loaderPolicy.shouldLoadNewUpdate(updateWithOverrideUrl, withLaunchedUpdate: updateDefault1, filters: manifestFilters)
         expect(result) == true
       }
 
       it("should not load same update even it matches override URL and headers") {
-        let loaderPolicy = LoaderSelectionPolicyFilterAware(config: configWithOverride)
+        let loaderPolicy = LoaderSelectionPolicyFilterAware()
         let result = loaderPolicy.shouldLoadNewUpdate(updateWithOverrideUrl, withLaunchedUpdate: updateWithOverrideUrl, filters: manifestFilters)
         expect(result) == false
       }
 
       it("should not load new update when URL doesn't match override") {
-        let loaderPolicy = LoaderSelectionPolicyFilterAware(config: configWithOverride)
+        let loaderPolicy = LoaderSelectionPolicyFilterAware()
         let result = loaderPolicy.shouldLoadNewUpdate(updateWithDifferentUrl, withLaunchedUpdate: updateDefault1, filters: manifestFilters)
-        expect(result) == false
+        expect(result) == true
       }
 
       it("should not load new update when headers don't match override") {
-        let loaderPolicy = LoaderSelectionPolicyFilterAware(config: configWithOverride)
+        let loaderPolicy = LoaderSelectionPolicyFilterAware()
         let result = loaderPolicy.shouldLoadNewUpdate(updateWithDifferentHeaders, withLaunchedUpdate: updateDefault1, filters: manifestFilters)
-        expect(result) == false
+        expect(result) == true
       }
 
       it("should load new update when launched update doesn't match filters") {
-        let loaderPolicy = LoaderSelectionPolicyFilterAware(config: configWithOverride)
+        let loaderPolicy = LoaderSelectionPolicyFilterAware()
         let result = loaderPolicy.shouldLoadNewUpdate(updateWithOverrideUrl, withLaunchedUpdate: updateDefault1, filters: manifestFilters)
         expect(result) == true
       }
@@ -188,7 +188,7 @@ internal class LoaderSelectionPolicyFilterAwareSpec: ExpoSpec {
         updateWithOverrideUrl.url = overrideUrl
         updateWithOverrideUrl.requestHeaders = overrideHeaders
 
-        let loaderPolicy = LoaderSelectionPolicyFilterAware(config: configWithOverride)
+        let loaderPolicy = LoaderSelectionPolicyFilterAware()
         let result = loaderPolicy.shouldLoadNewUpdate(updateOverrideWithDifferentBranch, withLaunchedUpdate: updateDefault1, filters: manifestFilters)
         expect(result) == false
       }

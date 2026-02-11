@@ -42,7 +42,7 @@ class UpdatesConfigOverrideSpec: ExpoSpec {
           let updateUrl = URL(string: "https://example.com/manifest")
           let requestHeaders = ["Authorization": "Bearer token"]
           let override = UpdatesConfigOverride(updateUrl: updateUrl, requestHeaders: requestHeaders)
-          UpdatesConfigOverride.save(configOverride: override)
+          UpdatesConfigOverride.save(override)
 
           let result = UpdatesConfigOverride.load()
 
@@ -54,7 +54,7 @@ class UpdatesConfigOverrideSpec: ExpoSpec {
         it("should return configuration from partial stored configurations") {
           let requestHeaders = ["Authorization": "Bearer token"]
           let override = UpdatesConfigOverride(updateUrl: nil, requestHeaders: requestHeaders)
-          UpdatesConfigOverride.save(configOverride: override)
+          UpdatesConfigOverride.save(override)
 
           let result = UpdatesConfigOverride.load()
 
@@ -70,7 +70,7 @@ class UpdatesConfigOverrideSpec: ExpoSpec {
           let requestHeaders = ["Authorization": "Bearer token"]
           let override = UpdatesConfigOverride(updateUrl: updateUrl, requestHeaders: requestHeaders)
 
-          UpdatesConfigOverride.save(configOverride: override)
+          UpdatesConfigOverride.save(override)
 
           let result = UpdatesConfigOverride.load()
           expect(result).toNot(beNil())
@@ -80,9 +80,9 @@ class UpdatesConfigOverrideSpec: ExpoSpec {
 
         it("should remove configuration when override is null") {
           let override = UpdatesConfigOverride(updateUrl: URL(string: "https://example.com"), requestHeaders: ["key": "value"])
-          UpdatesConfigOverride.save(configOverride: override)
+          UpdatesConfigOverride.save(override)
 
-          UpdatesConfigOverride.save(configOverride: nil)
+          UpdatesConfigOverride.save(nil)
 
           let result = UpdatesConfigOverride.load()
           expect(result).to(beNil())
@@ -107,7 +107,7 @@ class UpdatesConfigOverrideSpec: ExpoSpec {
         it("should update existing override") {
           let existingUrl = URL(string: "https://example.com/manifest")
           let existingOverride = UpdatesConfigOverride(updateUrl: existingUrl, requestHeaders: nil)
-          UpdatesConfigOverride.save(configOverride: existingOverride)
+          UpdatesConfigOverride.save(existingOverride)
 
           let newHeaders = ["User-Agent": "ExpoApp"]
 

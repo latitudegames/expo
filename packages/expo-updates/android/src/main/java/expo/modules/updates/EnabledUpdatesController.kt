@@ -63,15 +63,19 @@ class EnabledUpdatesController(
   private val logger = UpdatesLogger(context.filesDir)
   override val eventManager: IUpdatesEventManager = UpdatesEventManager(logger)
 
+  private val persistedOverride = UpdatesConfigurationOverride.load(context)
+  private val hasPersistedOverride: Boolean by lazy { persistedOverride != null && updatesConfiguration.disableAntiBrickingMeasures }
+  private var hasConfigOverride = hasPersistedOverride
+
   private val selectionPolicy: SelectionPolicy
-    get() = SelectionPolicyFactory.createFilterAwarePolicy(updatesConfiguration.getRuntimeVersion(), updatesConfiguration)
+    get() = resolveSelectionPolicy()
   private val controllerScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
   private val stateMachine = UpdatesStateMachine(logger, eventManager, UpdatesStateValue.entries.toSet(), controllerScope)
   private val fileDownloader: FileDownloader
     get() = FileDownloader(
       context.filesDir,
       EASClientID(context).uuid.toString(),
-      updatesConfiguration,
+      resolveConfiguration(),
       logger,
       databaseHolder.database
     )
@@ -106,25 +110,49 @@ class EnabledUpdatesController(
     startupEndTimeMillis = System.currentTimeMillis()
   }
 
-  private val startupProcedure = StartupProcedure(
-    context,
-    updatesConfiguration,
-    databaseHolder,
-    updatesDirectory,
-    fileDownloader,
-    selectionPolicy,
-    logger,
-    object : StartupProcedure.StartupProcedureCallback {
-      override fun onFinished() {
-        onStartupProcedureFinished()
-      }
+  private fun resolveConfiguration(): UpdatesConfiguration {
+    if (!hasPersistedOverride || persistedOverride == null) {
+      return updatesConfiguration
+    }
+    if (updatesConfiguration.hasUpdatesOverride) {
+      return updatesConfiguration
+    }
+    return UpdatesConfiguration.create(context, updatesConfiguration, persistedOverride)
+  }
 
-      override fun onRequestRelaunch(shouldRunReaper: Boolean, callback: LauncherCallback) {
-        relaunchReactApplication(shouldRunReaper, callback)
-      }
-    },
-    controllerScope
-  )
+  private fun resolveSelectionPolicy(): SelectionPolicy {
+    val resolvedConfig = resolveConfiguration()
+    return SelectionPolicyFactory.createFilterAwarePolicy(
+      resolvedConfig.getRuntimeVersion(),
+      resolvedConfig,
+      filterByChannel = hasConfigOverride
+    )
+  }
+
+  private fun createStartupProcedure(): StartupProcedure {
+    val resolvedConfig = resolveConfiguration()
+    return StartupProcedure(
+      context,
+      resolvedConfig,
+      databaseHolder,
+      updatesDirectory,
+      fileDownloader,
+      resolveSelectionPolicy(),
+      logger,
+      object : StartupProcedure.StartupProcedureCallback {
+        override fun onFinished() {
+          onStartupProcedureFinished()
+        }
+
+        override fun onRequestRelaunch(shouldRunReaper: Boolean, callback: LauncherCallback) {
+          relaunchReactApplication(shouldRunReaper, callback)
+        }
+      },
+      controllerScope
+    )
+  }
+
+  private val startupProcedure by lazy { createStartupProcedure() }
 
   private val launchedUpdate
     get() = startupProcedure.launchedUpdate
@@ -174,23 +202,25 @@ class EnabledUpdatesController(
 
     purgeUpdatesLogsOlderThanOneDay()
 
-    if (!updatesConfiguration.hasUpdatesOverride) {
-      BuildData.ensureBuildDataIsConsistent(updatesConfiguration, databaseHolder.database)
+    val resolvedConfig = resolveConfiguration()
+    if (!resolvedConfig.hasUpdatesOverride) {
+      BuildData.ensureBuildDataIsConsistent(resolvedConfig, databaseHolder.database)
     }
 
     stateMachine.queueExecution(startupProcedure)
   }
 
   private fun relaunchReactApplication(shouldRunReaper: Boolean, callback: LauncherCallback) {
+    val resolvedConfig = resolveConfiguration()
     val procedure = RelaunchProcedure(
       context,
       weakActivity,
-      updatesConfiguration,
+      resolvedConfig,
       logger,
       databaseHolder,
       updatesDirectory,
       fileDownloader,
-      selectionPolicy,
+      resolveSelectionPolicy(),
       getCurrentLauncher = { startupProcedure.launcher!! },
       setCurrentLauncher = { currentLauncher -> startupProcedure.setLauncher(currentLauncher) },
       shouldRunReaper = shouldRunReaper,
@@ -202,10 +232,12 @@ class EnabledUpdatesController(
   }
 
   private fun getEmbeddedUpdate(): UpdateEntity? {
-    return EmbeddedManifestUtils.getEmbeddedUpdate(context, updatesConfiguration)?.updateEntity
+    val resolvedConfig = resolveConfiguration()
+    return EmbeddedManifestUtils.getEmbeddedUpdate(context, resolvedConfig)?.updateEntity
   }
 
   override fun getConstantsForModule(): IUpdatesController.UpdatesModuleConstants {
+    val resolvedConfig = resolveConfiguration()
     return IUpdatesController.UpdatesModuleConstants(
       launchedUpdate = launchedUpdate,
       launchDuration = launchDuration,
@@ -213,9 +245,9 @@ class EnabledUpdatesController(
       emergencyLaunchException = startupProcedure.emergencyLaunchException,
       isEnabled = true,
       isUsingEmbeddedAssets = isUsingEmbeddedAssets,
-      runtimeVersion = updatesConfiguration.runtimeVersionRaw,
-      checkOnLaunch = updatesConfiguration.checkOnLaunch,
-      requestHeaders = updatesConfiguration.requestHeaders,
+      runtimeVersion = resolvedConfig.runtimeVersionRaw,
+      checkOnLaunch = resolvedConfig.checkOnLaunch,
+      requestHeaders = resolvedConfig.requestHeaders,
       localAssetFiles = localAssetFiles,
       shouldDeferToNativeForAPIMethodAvailabilityInDevelopment = false,
       initialContext = stateMachine.context
@@ -243,25 +275,30 @@ class EnabledUpdatesController(
   }
 
   override suspend fun checkForUpdate() = suspendCancellableCoroutine { continuation ->
-    val procedure = CheckForUpdateProcedure(context, updatesConfiguration, databaseHolder, logger, fileDownloader, selectionPolicy, launchedUpdate) {
+    val resolvedConfig = resolveConfiguration()
+    val resolvedSelectionPolicy = resolveSelectionPolicy()
+    val procedure = CheckForUpdateProcedure(context, resolvedConfig, databaseHolder, logger, fileDownloader, resolvedSelectionPolicy, launchedUpdate) {
       continuation.resume(it)
     }
     stateMachine.queueExecution(procedure)
   }
 
   override suspend fun fetchUpdate() = suspendCancellableCoroutine { continuation ->
-    val procedure = FetchUpdateProcedure(context, updatesConfiguration, logger, databaseHolder, updatesDirectory, fileDownloader, selectionPolicy, launchedUpdate) {
+    val resolvedConfig = resolveConfiguration()
+    val resolvedSelectionPolicy = resolveSelectionPolicy()
+    val procedure = FetchUpdateProcedure(context, resolvedConfig, logger, databaseHolder, updatesDirectory, fileDownloader, resolvedSelectionPolicy, launchedUpdate) {
       continuation.resume(it)
     }
     stateMachine.queueExecution(procedure)
   }
 
   override suspend fun getExtraParams() = suspendCancellableCoroutine { continuation ->
+    val resolvedConfig = resolveConfiguration()
     controllerScope.launch {
       try {
         val result = ManifestMetadata.getExtraParams(
           databaseHolder.database,
-          updatesConfiguration
+          resolvedConfig
         )
         val resultMap = when (result) {
           null -> Bundle()
@@ -281,11 +318,12 @@ class EnabledUpdatesController(
   }
 
   override suspend fun setExtraParam(key: String, value: String?) = suspendCancellableCoroutine { continuation ->
+    val resolvedConfig = resolveConfiguration()
     controllerScope.launch {
       runCatching {
         ManifestMetadata.setExtraParam(
           databaseHolder.database,
-          updatesConfiguration,
+          resolvedConfig,
           key,
           value
         )
@@ -305,6 +343,7 @@ class EnabledUpdatesController(
       throw CodedException("ERR_UPDATES_RUNTIME_OVERRIDE", "Must set disableAntiBrickingMeasures configuration to use updates overriding", null)
     }
     UpdatesConfigurationOverride.save(context, configOverride)
+    hasConfigOverride = true
     updatesConfiguration = UpdatesConfiguration.create(context, updatesConfiguration, configOverride)
   }
 
@@ -317,6 +356,7 @@ class EnabledUpdatesController(
       throw CodedException("ERR_UPDATES_RUNTIME_OVERRIDE", "Invalid update requestHeaders override: $requestHeaders", null)
     }
     val configOverride = UpdatesConfigurationOverride.saveRequestHeaders(context, requestHeaders)
+    hasConfigOverride = true
     updatesConfiguration = UpdatesConfiguration.create(context, updatesConfiguration, configOverride)
   }
 

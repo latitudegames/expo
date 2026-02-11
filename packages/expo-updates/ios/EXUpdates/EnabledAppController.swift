@@ -12,6 +12,9 @@ public class EnabledAppController: InternalAppControllerInterface, UpdatesExtern
   public var reloadScreenManager: Reloadable? = ReloadScreenManager()
 
   internal var config: UpdatesConfig
+  private let persistedOverride = UpdatesConfigOverride.load()
+  private lazy var hasPersistedOverride: Bool = persistedOverride != nil && self.config.disableAntiBrickingMeasures
+  private lazy var hasConfigOverride: Bool = hasPersistedOverride
   private let database: UpdatesDatabase
 
   public let updatesDirectory: URL? // internal for E2E test
@@ -31,13 +34,6 @@ public class EnabledAppController: InternalAppControllerInterface, UpdatesExtern
   }
 
   private let stateMachine: UpdatesStateMachine
-
-  private var selectionPolicy: SelectionPolicy {
-    return SelectionPolicyFactory.filterAwarePolicy(
-      withRuntimeVersion: config.runtimeVersion,
-      config: config
-    )
-  }
 
   private let logger = UpdatesLogger()
 
@@ -62,6 +58,25 @@ public class EnabledAppController: InternalAppControllerInterface, UpdatesExtern
     UpdatesControllerRegistry.sharedInstance.metricsController = self
   }
 
+  private func resolveConfiguration() -> UpdatesConfig {
+    guard hasPersistedOverride, let persistedOverride else {
+      return self.config
+    }
+    if self.config.hasUpdatesOverride {
+      return self.config
+    }
+    return (try? UpdatesConfig.config(fromConfig: self.config, configOverride: persistedOverride)) ?? self.config
+  }
+
+  private func resolveSelectionPolicy() -> SelectionPolicy {
+    let resolvedConfig = resolveConfiguration()
+    return SelectionPolicyFactory.filterAwarePolicy(
+      withRuntimeVersion: resolvedConfig.runtimeVersion,
+      config: resolvedConfig,
+      filterByChannel: hasConfigOverride
+    )
+  }
+
   public func start() {
     precondition(!isStarted, "AppController:start should only be called once per instance")
 
@@ -70,14 +85,17 @@ public class EnabledAppController: InternalAppControllerInterface, UpdatesExtern
 
     purgeUpdatesLogsOlderThanOneDay()
 
-    if !self.config.hasUpdatesOverride {
-      UpdatesBuildData.ensureBuildDataIsConsistentAsync(database: database, config: self.config, logger: logger)
+    let resolvedConfig = resolveConfiguration()
+    let resolvedSelectionPolicy = resolveSelectionPolicy()
+
+    if !resolvedConfig.hasUpdatesOverride {
+      UpdatesBuildData.ensureBuildDataIsConsistentAsync(database: database, config: resolvedConfig, logger: logger)
     }
 
     startupProcedure = StartupProcedure(
       database: self.database,
-      config: self.config,
-      selectionPolicy: self.selectionPolicy,
+      config: resolvedConfig,
+      selectionPolicy: resolvedSelectionPolicy,
       controllerQueue: self.controllerQueue,
       updatesDirectory: self.updatesDirectoryInternal,
       logger: self.logger
@@ -105,10 +123,12 @@ public class EnabledAppController: InternalAppControllerInterface, UpdatesExtern
   }
 
   func startupProcedure(_ startupProcedure: StartupProcedure, errorRecoveryDidRequestRelaunchWithCompletion completion: @escaping (Error?, Bool) -> Void) {
+    let resolvedConfig = resolveConfiguration()
+    let resolvedSelectionPolicy = resolveSelectionPolicy()
     let procedure = RelaunchProcedure(
       database: self.database,
-      config: self.config,
-      selectionPolicy: self.selectionPolicy,
+      config: resolvedConfig,
+      selectionPolicy: resolvedSelectionPolicy,
       controllerQueue: self.controllerQueue,
       updatesDirectory: self.updatesDirectoryInternal,
       logger: self.logger,
@@ -134,10 +154,12 @@ public class EnabledAppController: InternalAppControllerInterface, UpdatesExtern
     success successBlockArg: @escaping () -> Void,
     error errorBlockArg: @escaping (_ error: Exception) -> Void
   ) {
+    let resolvedConfig = resolveConfiguration()
+    let resolvedSelectionPolicy = resolveSelectionPolicy()
     let procedure = RelaunchProcedure(
       database: self.database,
-      config: self.config,
-      selectionPolicy: self.selectionPolicy,
+      config: resolvedConfig,
+      selectionPolicy: resolvedSelectionPolicy,
       controllerQueue: self.controllerQueue,
       updatesDirectory: self.updatesDirectoryInternal,
       logger: self.logger,
@@ -186,6 +208,7 @@ public class EnabledAppController: InternalAppControllerInterface, UpdatesExtern
   // MARK: - JS API
 
   public func getConstantsForModule() -> UpdatesModuleConstants {
+    let resolvedConfig = resolveConfiguration()
     return UpdatesModuleConstants(
       launchedUpdate: startupProcedure.launchedUpdate(),
       launchDuration: launchDuration,
@@ -193,9 +216,9 @@ public class EnabledAppController: InternalAppControllerInterface, UpdatesExtern
       emergencyLaunchException: startupProcedure.emergencyLaunchException,
       isEnabled: true,
       isUsingEmbeddedAssets: startupProcedure.isUsingEmbeddedAssets(),
-      runtimeVersion: self.config.runtimeVersion,
-      checkOnLaunch: self.config.checkOnLaunch,
-      requestHeaders: self.config.requestHeaders,
+      runtimeVersion: resolvedConfig.runtimeVersion,
+      checkOnLaunch: resolvedConfig.checkOnLaunch,
+      requestHeaders: resolvedConfig.requestHeaders,
       assetFilesMap: startupProcedure.assetFilesMap(),
       shouldDeferToNativeForAPIMethodAvailabilityInDevelopment: false,
       initialContext: stateMachine.context
@@ -206,10 +229,12 @@ public class EnabledAppController: InternalAppControllerInterface, UpdatesExtern
     success successBlockArg: @escaping (_ checkForUpdateResult: CheckForUpdateResult) -> Void,
     error errorBlockArg: @escaping (_ error: Exception) -> Void
   ) {
+    let resolvedConfig = resolveConfiguration()
+    let resolvedSelectionPolicy = resolveSelectionPolicy()
     let procedure = CheckForUpdateProcedure(
       database: self.database,
-      config: self.config,
-      selectionPolicy: self.selectionPolicy,
+      config: resolvedConfig,
+      selectionPolicy: resolvedSelectionPolicy,
       logger: self.logger,
       updatesDirectory: self.updatesDirectoryInternal
     ) {
@@ -226,10 +251,12 @@ public class EnabledAppController: InternalAppControllerInterface, UpdatesExtern
     success successBlockArg: @escaping (_ fetchUpdateResult: FetchUpdateResult) -> Void,
     error errorBlockArg: @escaping (_ error: Exception) -> Void
   ) {
+    let resolvedConfig = resolveConfiguration()
+    let resolvedSelectionPolicy = resolveSelectionPolicy()
     let procedure = FetchUpdateProcedure(
       database: self.database,
-      config: self.config,
-      selectionPolicy: self.selectionPolicy,
+      config: resolvedConfig,
+      selectionPolicy: resolvedSelectionPolicy,
       controllerQueue: self.controllerQueue,
       updatesDirectory: self.updatesDirectoryInternal,
       logger: self.logger
@@ -247,9 +274,10 @@ public class EnabledAppController: InternalAppControllerInterface, UpdatesExtern
     success successBlockArg: @escaping (_ extraParams: [String: String]?) -> Void,
     error errorBlockArg: @escaping (_ error: Exception) -> Void
   ) {
+    let resolvedConfig = resolveConfiguration()
     self.database.databaseQueue.async {
       do {
-        successBlockArg(try self.database.extraParams(withScopeKey: self.config.scopeKey))
+        successBlockArg(try self.database.extraParams(withScopeKey: resolvedConfig.scopeKey))
       } catch {
         errorBlockArg(UnexpectedException(error))
       }
@@ -262,9 +290,10 @@ public class EnabledAppController: InternalAppControllerInterface, UpdatesExtern
     success successBlockArg: @escaping () -> Void,
     error errorBlockArg: @escaping (_ error: Exception) -> Void
   ) {
+    let resolvedConfig = resolveConfiguration()
     self.database.databaseQueue.async {
       do {
-        try self.database.setExtraParam(key: key, value: value, withScopeKey: self.config.scopeKey)
+        try self.database.setExtraParam(key: key, value: value, withScopeKey: resolvedConfig.scopeKey)
         successBlockArg()
       } catch {
         errorBlockArg(UnexpectedException(error))
@@ -273,14 +302,16 @@ public class EnabledAppController: InternalAppControllerInterface, UpdatesExtern
   }
 
   public func getEmbeddedUpdate() -> Update? {
-    return EmbeddedAppLoader.embeddedManifest(withConfig: self.config, database: self.database)
+    let resolvedConfig = resolveConfiguration()
+    return EmbeddedAppLoader.embeddedManifest(withConfig: resolvedConfig, database: self.database)
   }
 
   public func setUpdateURLAndRequestHeadersOverride(_ configOverride: UpdatesConfigOverride?) throws {
     if !config.disableAntiBrickingMeasures {
       throw NotAllowedAntiBrickingMeasuresException()
     }
-    UpdatesConfigOverride.save(configOverride: configOverride)
+    UpdatesConfigOverride.save(configOverride)
+    hasConfigOverride = true
     self.config = try UpdatesConfig.config(fromConfig: self.config, configOverride: configOverride)
   }
 
@@ -292,6 +323,7 @@ public class EnabledAppController: InternalAppControllerInterface, UpdatesExtern
       throw InvalidRequestHeadersOverrideException(requestHeaders)
     }
     let configOverride = UpdatesConfigOverride.save(requestHeaders: requestHeaders)
+    hasConfigOverride = true
     self.config = try UpdatesConfig.config(fromConfig: self.config, configOverride: configOverride)
   }
 }

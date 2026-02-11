@@ -7,10 +7,10 @@ import expo.modules.updates.UpdatesConfiguration
  * the same ordering policy.
  */
 object SelectionPolicyFactory {
-  @JvmStatic fun createFilterAwarePolicy(runtimeVersion: String, config: UpdatesConfiguration): SelectionPolicy {
+  @JvmStatic fun createFilterAwarePolicy(runtimeVersion: String, config: UpdatesConfiguration, filterByChannel: Boolean = false): SelectionPolicy {
     return SelectionPolicy(
-      LauncherSelectionPolicyFilterAware(runtimeVersion, config),
-      LoaderSelectionPolicyFilterAware(config),
+      LauncherSelectionPolicyFilterAware(runtimeVersion, filterByChannel, config),
+      LoaderSelectionPolicyFilterAware(config.disableAntiBrickingMeasures),
       ReaperSelectionPolicyFilterAware()
     )
   }
