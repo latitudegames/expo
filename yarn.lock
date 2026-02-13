@@ -7247,10 +7247,10 @@ diff@^4.0.1:
   resolved "https://registry.yarnpkg.com/diff/-/diff-4.0.2.tgz#60f3aecb89d5fae520c11aa19efc2bb982aade7d"
   integrity sha512-58lmxKSA4BNyLz+HHMUzlOEpg09FV+ev6ZMe3vJihgdxzgcwZ8VoEEPmALCZG9LmqfVoNMMKpttIYTVG6uDY7A==
 
-diff@^5.2.0:
-  version "5.2.0"
-  resolved "https://registry.yarnpkg.com/diff/-/diff-5.2.0.tgz#26ded047cd1179b78b9537d5ef725503ce1ae531"
-  integrity sha512-uIFDxqpRZGZ6ThOk84hEfqWoHx2devRFvpTZcTHur85vImfaxUbTW9Ryh4CpCuDnToOP1CEtXKIgytHBPVff5A==
+diff@^5.2.2:
+  version "5.2.2"
+  resolved "https://registry.yarnpkg.com/diff/-/diff-5.2.2.tgz#0a4742797281d09cfa699b79ea32d27723623bad"
+  integrity sha512-vtcDfH3TOjP8UekytvnHH1o1P4FcUdt4eQ1Y+Abap1tk/OB2MWQvcwS2ClCd1zuIhc3JKOx6p3kod8Vfys3E+A==
 
 dir-glob@^3.0.1:
   version "3.0.1"
@@ -8217,6 +8217,14 @@ expo-atlas@^0.4.1:
     serve-static "^1.15.0"
     stream-json "^1.8.0"
 
+expo-manifests@~55.0.5:
+  version "55.0.5"
+  resolved "https://registry.yarnpkg.com/expo-manifests/-/expo-manifests-55.0.5.tgz#ae53975a07c3c1a8cb5b2a8648234f8fa29d8f08"
+  integrity sha512-GXSVnEkAJ1o71L/WshV/NmDda/vnD4poDDKi/oSYSMd8him2u0GfqqzCsgec6Odlqz5fMqXO4JgoBaWKtzn8Aw==
+  dependencies:
+    "@expo/config" "~55.0.4"
+    expo-json-utils "~55.0.0"
+
 expo-progress@^0.0.2:
   version "0.0.2"
   resolved "https://registry.yarnpkg.com/expo-progress/-/expo-progress-0.0.2.tgz#0d42470f8f1f019d3ae0f1da377c9bca891f3dd8"
@@ -8229,6 +8237,46 @@ expo-three@7.0.1:
   dependencies:
     "@expo/browser-polyfill" "^1.0.1"
     expo-asset-utils "~3.0.0"
+
+expo-updates@55.0.6:
+  version "55.0.6"
+  resolved "https://registry.yarnpkg.com/expo-updates/-/expo-updates-55.0.6.tgz#2565e3bd9a046e311c3392c7e7babedae2eb1687"
+  integrity sha512-ykCzafGoFNHIJGXv59HxfDSVt/lVgE1RsRzmLfZbDCq2bapMZi1eUdprKhhrJVTkXPq92xDESx4I+2LpVc4f4g==
+  dependencies:
+    "@expo/code-signing-certificates" "^0.0.6"
+    "@expo/plist" "^0.5.2"
+    "@expo/spawn-async" "^1.7.2"
+    arg "4.1.0"
+    chalk "^4.1.2"
+    debug "^4.3.4"
+    expo-eas-client "~55.0.2"
+    expo-manifests "~55.0.4"
+    expo-structured-headers "~55.0.0"
+    expo-updates-interface "~55.1.1"
+    getenv "^2.0.0"
+    glob "^13.0.0"
+    ignore "^5.3.1"
+    resolve-from "^5.0.0"
+
+expo-updates@~55.0.6:
+  version "55.0.7"
+  resolved "https://registry.yarnpkg.com/expo-updates/-/expo-updates-55.0.7.tgz#580eff50517ed4a996c64f18fe7c4b715c118179"
+  integrity sha512-AkpyXJ2nRfKSB1MF3qkHYQeuG7Or9FMWcQAbrkIzETGeA3jpfPo0APvuq5PJjZf1VDX2AN3zznmYjrQ/MSODTA==
+  dependencies:
+    "@expo/code-signing-certificates" "^0.0.6"
+    "@expo/plist" "^0.5.2"
+    "@expo/spawn-async" "^1.7.2"
+    arg "4.1.0"
+    chalk "^4.1.2"
+    debug "^4.3.4"
+    expo-eas-client "~55.0.2"
+    expo-manifests "~55.0.5"
+    expo-structured-headers "~55.0.0"
+    expo-updates-interface "~55.1.1"
+    getenv "^2.0.0"
+    glob "^13.0.0"
+    ignore "^5.3.1"
+    resolve-from "^5.0.0"
 
 exponential-backoff@^3.1.1:
   version "3.1.1"
