@@ -31,21 +31,21 @@ public final class LauncherSelectionPolicyFilterAware: NSObject, LauncherSelecti
         return (update.url == nil && update.requestHeaders == nil) || (update.url == config.updateUrl && update.requestHeaders == config.requestHeaders)
       }
 
-    if filterByChannel, let channelName = channelNameFromConfig(), !channelName.isEmpty {
-      NSLog("[ChannelSwitch] Filtering updates for channel %@", channelName)
+    if filterByChannel, let configuredChannelName = channelNameFromConfig(), !configuredChannelName.isEmpty {
+      NSLog("[ChannelSwitch] Filtering updates for channel %@", configuredChannelName)
       let channelFilteredUpdates = matchingUpdates.filter { update in
         guard let updateChannel = channelName(for: update) else {
           return false
         }
-        return updateChannel == channelName
+        return updateChannel == configuredChannelName
       }
 
       if !channelFilteredUpdates.isEmpty {
-        NSLog("[ChannelSwitch] Found %d updates matching channel %@", channelFilteredUpdates.count, channelName)
+        NSLog("[ChannelSwitch] Found %d updates matching channel %@", channelFilteredUpdates.count, configuredChannelName)
         return channelFilteredUpdates.sorted { $0.commitTime > $1.commitTime }.first
       }
 
-      NSLog("[ChannelSwitch] No updates matched channel %@; falling back to unfiltered selection", channelName)
+      NSLog("[ChannelSwitch] No updates matched channel %@; falling back to unfiltered selection", configuredChannelName)
     }
 
     return matchingUpdates.sorted { $0.commitTime > $1.commitTime }.first
