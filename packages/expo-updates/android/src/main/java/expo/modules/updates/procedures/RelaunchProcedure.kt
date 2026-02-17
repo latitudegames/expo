@@ -5,7 +5,7 @@ import android.content.Context
 import com.facebook.react.ReactApplication
 import com.facebook.react.bridge.JSBundleLoader
 import expo.modules.core.interfaces.ReactNativeHostHandler
-import expo.modules.rncompatibility.ReactNativeFeatureFlags
+import com.facebook.react.internal.featureflags.ReactNativeFeatureFlags
 import expo.modules.updates.UpdatesConfiguration
 import expo.modules.updates.db.DatabaseHolder
 import expo.modules.updates.db.Reaper
@@ -130,7 +130,7 @@ class RelaunchProcedure(
     reactApplication: ReactApplication,
     launchAssetFile: String
   ) {
-    if (ReactNativeFeatureFlags.enableBridgelessArchitecture) {
+    if (ReactNativeFeatureFlags.enableBridgelessArchitecture()) {
       return
     }
 
